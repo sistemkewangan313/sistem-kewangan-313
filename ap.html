@@ -1,0 +1,2699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Kewangan 313 - Accounts Payable (A/P)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --text-main: #000000; --text-muted: #111111;
+            --accent: #e74c3c; --bg-body: #f4f6f8; --nav-bg: #2c3e50;
+            --primary: #9b59b6; 
+            --success: #27ae60; --warning: #f39c12;
+            --edit-bg: rgba(0, 0, 0, 0.03); --edit-border: rgba(0, 0, 0, 0.2);
+        }
+
+        body { font-family: 'Montserrat', sans-serif; margin: 0; padding: 0; background: var(--bg-body); color: var(--text-main); }
+        
+        /* NAVBAR */
+        .navbar { background: var(--nav-bg); padding: 0 20px; display: flex; align-items: center; overflow-x: auto; white-space: nowrap; box-shadow: 0 4px 10px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 1000;}
+        .nav-brand { color: white; font-weight: 800; font-size: 18px; margin-right: 30px; padding: 15px 0; letter-spacing: 1px;}
+        .nav-brand span { color: var(--warning); }
+        .nav-item { color: #bdc3c7; font-weight: 600; font-size: 13px; padding: 18px 15px; cursor: pointer; transition: 0.3s; border-bottom: 3px solid transparent; text-decoration: none; display: inline-block;}
+        .nav-item:hover { color: white; }
+        .nav-item.active { color: white; border-bottom-color: var(--primary); background: rgba(255,255,255,0.05); }
+
+        /* CRM SPLIT LAYOUT */
+        .crm-container { display: flex; gap: 20px; padding: 20px; max-width: 1400px; margin: 0 auto; }
+        .crm-left { flex: 1; min-width: 300px; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); height: max-content; position: sticky; top: 80px;}
+        .crm-right { flex: 2.5; min-width: 400px; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-size: 12px; font-weight: 700; color: #555; margin-bottom: 5px; }
+        .form-control { width: 100%; padding: 10px; border: 2px solid #eee; border-radius: 6px; font-family: 'Montserrat'; font-size: 13px; box-sizing: border-box; transition: 0.3s;}
+        .form-control:focus { border-color: var(--primary); outline: none; }
+        
+        .btn { padding: 10px 20px; border-radius: 6px; border: none; cursor: pointer; font-family: 'Montserrat'; font-weight: 700; font-size: 13px; transition: 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 8px;}
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-success { background: var(--success); color: white; }
+        .btn-warning { background: var(--warning); color: white; }
+        .btn-danger { background: var(--accent); color: white; }
+        .btn-outline { background: transparent; border: 2px solid #ddd; color: #555; }
+        .btn-outline:hover { background: #eee; }
+
+        /* TABLE STYLES */
+        .table-responsive { width: 100%; overflow-x: auto; }
+        table.crm-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        table.crm-table th { background: #f8f9fa; padding: 12px; text-align: left; border-bottom: 2px solid #ddd; color: #555; font-weight: 700; font-size: 11px; text-transform: uppercase;}
+        table.crm-table td { padding: 12px; border-bottom: 1px solid #eee; vertical-align: middle; }
+        table.crm-table tr:hover { background: #fdfdfd; }
+
+        /* SUPPLIER VAULT */
+        #vault-section { display: none; padding: 20px; max-width: 1400px; margin: 0 auto; animation: fadeIn 0.3s; }
+        .vault-header { background: linear-gradient(135deg, #8e44ad, #2980b9); color: white; padding: 30px; border-radius: 8px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 10px 20px rgba(0,0,0,0.1);}
+        .vault-stat-box { background: rgba(255,255,255,0.1); padding: 15px 20px; border-radius: 6px; text-align: right; border: 1px solid rgba(255,255,255,0.2);}
+        .vault-actions { background: white; padding: 15px 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: flex; gap: 10px; flex-wrap: wrap;}
+        
+        /* UNIFIED DOCUMENT EDITOR */
+        #editor-section { display: none; padding: 20px; padding-bottom: 100px; background: #e0e0e0; min-height: 100vh; animation: fadeIn 0.3s; }
+        .document-box { max-width: 800px; margin: 0 auto; background: white; padding: 60px; box-shadow: 0 20px 50px rgba(0,0,0,0.15); font-family: Arial, sans-serif; color: #000; position: relative;}
+        
+        .doc-input, .doc-textarea { border: 1px dashed transparent; background: transparent; font-family: Arial; color: #000; transition: 0.2s; padding: 2px;}
+        .doc-input:hover, .doc-textarea:hover { background: var(--edit-bg); border: 1px dashed var(--edit-border); }
+        .doc-input:focus, .doc-textarea:focus { background: white; border: 1px solid var(--primary); outline: none; }
+        .doc-textarea { resize: none; overflow: hidden; width: 100%; box-sizing: border-box; }
+        
+        .floating-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: white; padding: 15px 20px; box-shadow: 0 -5px 20px rgba(0,0,0,0.1); display: flex; justify-content: center; gap: 15px; z-index: 2000; box-sizing: border-box;}
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* AGEING TABLE STYLES */
+        .ageing-box { display: none; padding: 20px; max-width: 1400px; margin: 0 auto; animation: fadeIn 0.3s; }
+        .ageing-box.active { display: block; }
+        .ageing-table-print { font-family: Arial, sans-serif; width: 100%; border-collapse: collapse;}
+        .ageing-table-print th { background-color: #f0f0f0; border: 1px solid #000; padding: 6px; font-size: 11px; text-align: center; }
+        .ageing-table-print td { border: 1px dotted #ccc; padding: 6px; font-size: 11px; vertical-align: middle; }
+        .ageing-table-print tfoot td { border: 1px solid #000; font-weight: bold; background-color: #f9f9f9; }
+
+        /* SOA VIEW STYLES */
+        #soa-section { display: none; padding: 20px; padding-bottom: 100px; background: #e0e0e0; min-height: 100vh; animation: fadeIn 0.3s; }
+        .soa-table th { padding: 8px; border: 1px solid #000; text-align: left; font-size: 12px; background: #f0f0f0;}
+        .soa-table td { padding: 8px; border-right: 1px solid #000; border-left: 1px solid #000; font-size: 12px;}
+
+        /* MODAL PAYMENT */
+        .modal { display: none; position: fixed; z-index: 2005; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(3px); }
+        .modal-content { background: white; margin: 5% auto; padding: 30px; border-radius: 8px; width: 90%; max-width: 600px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); animation: fadeIn 0.3s; max-height: 90vh; overflow-y: auto;}
+        .close-btn { float: right; font-size: 24px; cursor: pointer; font-weight: bold; color: #888; }
+        .close-btn:hover { color: #e74c3c; }
+
+        /* PRINT RULES */
+        .print-mirror { display: none; white-space: pre-wrap; word-wrap: break-word; }
+        .bill-ac { width: 120px !important; }
+        #th-desc { width: auto !important; min-width: 200px; }
+        @media print {
+            body { background: white; padding: 0; margin: 0; }
+            .navbar, .crm-container, #vault-section, .floating-bar, .no-print, button, .modal { display: none !important; }
+            body > div { display: none !important; }
+            
+            body.printing-invoice > #editor-section { display: block !important; padding: 0 !important; min-height: auto !important; }
+            body.printing-soa > #soa-section { display: block !important; padding: 0 !important; min-height: auto !important; }
+            body.printing-aging > #tab-aging { display: block !important; padding: 0 !important; min-height: auto !important; }
+
+            .document-box { box-shadow: none !important; padding: 0 !important; margin: 0 !important; max-width: 100% !important; border:none !important;}
+            input::placeholder, textarea::placeholder { color: transparent !important; }
+            textarea, 
+            input.item-desc, 
+            input.po-svc-desc, 
+            input.po-mat-desc,
+            #doc-attn,
+            #pv-supp-bankac,
+            #pv-supp-bankname,
+            #po-supp-name,
+            #po-ship-name,
+            #cndn-bank-name,
+            #cndn-bank-ac,
+            input.pv-acno,
+            input.pv-acname { display: none !important; }
+            .print-mirror { display: block !important; }
+            input { border: none !important; background: transparent !important; padding: 0 !important; margin: 0 !important; }
+            
+            #doc-date, #doc-no, #doc-extra-input { text-align: right !important; }
+            #doc-co-name, #doc-co-addr { text-align: left !important; }
+            
+            .ageing-table-print tfoot { display: table-row-group !important; }
+            .bill-ac { display: table-cell !important; width: 100px !important; }
+
+            /* KOD BARU: Buat semua tulisan jadi hitam dan buang kotak jadual item (Sama macam A/R) */
+            body.printing-invoice .document-box * { color: #000 !important; }
+            body.printing-invoice .table-responsive table { border: none !important; }
+            body.printing-invoice .table-responsive th { 
+                border-top: 1px solid #000 !important; 
+                border-bottom: 1px solid #000 !important; 
+                border-right: none !important; 
+                border-left: none !important; 
+                background: transparent !important; 
+            }
+            body.printing-invoice .table-responsive td { border: none !important; }
+            body.printing-invoice #doc-items tr { border-bottom: none !important; }
+            body.printing-invoice #doc-discount { display: none !important; }
+            body.printing-invoice #doc-disc-print { display: inline !important; }
+
+            body.printing-invoice #po-services-body tr,
+            body.printing-invoice #po-materials-body tr { border-bottom: none !important; }
+        }
+
+
+        @media screen and (max-width: 768px) {
+            .crm-container { flex-direction: column; }
+            .crm-left { position: static; }
+            .vault-header { flex-direction: column; align-items: flex-start; gap: 15px; }
+            .vault-stat-box { width: 100%; text-align: left; box-sizing: border-box; }
+            .document-box { padding: 20px; }
+            .bill-ac { width: 80px !important; } /* Kecilkan saiz kolum akaun */
+            #th-desc { width: auto !important; } /* Biar description kembang sendiri */
+        }
+
+        /* SISTEM USER ROLES (ADMIN VS STAFF) */
+        body.role-staff .admin-only { display: none !important; }
+        body.role-staff .staff-disabled { pointer-events: none !important; opacity: 0.5 !important; filter: grayscale(100%); }
+        
+        /* PIN OVERLAY */
+        #pinOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: rgba(44, 62, 80, 0.95); z-index: 9998; justify-content: center; align-items: center; flex-direction: column; }
+        .pin-box { background: white; padding: 40px; border-radius: 12px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 300px; box-sizing: border-box;}
+
+    </style>
+</head>
+<body>
+
+<div class="navbar no-print">
+    <div class="nav-brand">Sistem<span> Kewangan 313</span></div>
+    <a href="index.html" class="nav-item">🏠 Dashboard & Settings</a>
+    <a href="ar.html" class="nav-item">👥 Receivables (A/R)</a>
+    <a href="ap.html" class="nav-item active">🏭 Payables (A/P)</a>
+    <a href="cashbook.html" class="nav-item">📘 Cashbook & Bank</a>
+    <a href="gl.html" class="nav-item admin-only">📊 Accounts & Audit (GL)</a>
+</div>
+
+<div id="crm-section" class="crm-container">
+    <div class="crm-left no-print">
+        <h3 id="form-title" style="margin-top:0; color:var(--nav-bg); border-bottom:2px solid #eee; padding-bottom:10px;">➕ Register Vendor / Payee</h3>
+        <input type="hidden" id="reg-id"> 
+        <div class="form-group">
+            <label>Vendor Code</label>
+            <input type="text" id="reg-code" class="form-control" placeholder="V-001 (Biar kosong untuk auto)" style="text-transform:uppercase; font-weight:bold; color:var(--primary);">
+        </div>
+        <div class="form-group"><label>Vendor Name *</label><input type="text" id="reg-name" class="form-control" style="text-transform:uppercase;"></div>
+        <div class="form-group"><label>Contact Person (ATTN)</label><input type="text" id="reg-attn" class="form-control"></div>
+        <div class="form-group"><label>Phone Number</label><input type="text" id="reg-phone" class="form-control"></div>
+        <div class="form-group"><label>Full Address</label><textarea id="reg-addr" class="form-control" rows="3"></textarea></div>
+        <div class="form-group"><label>Default Credit Terms</label><input type="text" id="reg-terms" class="form-control" placeholder="Eg: 30 Days"></div>
+        
+        <div style="background:#f8f9fa; padding:10px; border-radius:6px; border:1px solid #ddd; margin-bottom:15px;">
+            <div style="font-size:11px; font-weight:bold; color:#777; margin-bottom:10px; text-transform:uppercase;">Banking Details (For PV)</div>
+            <div id="vendor-bank-list">
+                <!-- Barisan bank akan ditambah di sini -->
+            </div>
+            <button type="button" class="btn btn-outline" style="width:100%; font-size:11px; padding:5px; margin-top:5px;" onclick="addVendorBankRow()">+ Add Bank Account</button>
+        </div>
+
+        <div style="display:flex; gap:10px;">
+            <button class="btn btn-primary" id="btn-save-client" style="flex:1;" onclick="registerClient()">💾 Save Vendor</button>
+            <button class="btn btn-outline" id="btn-cancel-edit" style="display:none;" onclick="cancelEditClient()">❌ Cancel</button>
+        </div>
+    </div>
+
+    <div class="crm-right no-print">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+            <h2 id="right-panel-title" style="margin:0; color:var(--nav-bg);">🏭 Vendor Database</h2>
+            
+            <div style="display: flex; gap: 10px; background: #f8f9fa; padding: 5px; border-radius: 8px; border: 1px solid #eee;">
+                <button class="btn btn-primary" id="btn-tab-clients" onclick="toggleRightPanel('CLIENTS')" style="padding:8px 15px; background:var(--primary);">🏭 Vendors</button>
+                <button class="btn btn-outline" id="btn-tab-orders" onclick="toggleRightPanel('ORDERS')" style="padding:8px 15px; border:none;">📥 Master PO List</button>
+                <button class="btn btn-outline" id="btn-tab-alldocs" onclick="toggleRightPanel('ALLDOCS')" style="padding:8px 15px; border:none; white-space:nowrap;">📑 All Documents</button>
+            </div>
+
+            <div style="display: flex; gap: 10px;">
+                <button class="btn btn-warning" onclick="openAgeing()">📊 A/P Ageing Report</button>
+            </div>
+        </div>
+        
+        <input type="text" id="search-data" class="form-control" style="margin-bottom:15px; border: 2px solid #ccc;" placeholder="🔍 Search vendor..." onkeyup="filterTableData()">
+        <div id="view-clients">
+            <div class="filter-bar" style="margin-bottom: 15px; display: flex; justify-content: flex-end;">
+                <strong style="font-size:12px; color:#555; margin-right: 10px;">Sort By:</strong>
+                <select id="sort-client-by" class="form-control" style="width:auto; padding:6px 12px; font-weight:bold; color:var(--primary);" onchange="loadCRM()">
+                    <option value="CODE_ASC">🔢 Code (A - Z)</option>
+                    <option value="CODE_DESC">🔢 Code (Z - A)</option>
+                    <option value="NAME_ASC">🔤 Name (A - Z)</option>
+                    <option value="NAME_DESC">🔤 Name (Z - A)</option>
+                    <option value="BAL_DESC">💰 Balance (Highest First)</option>
+                    <option value="BAL_ASC">💰 Balance (Lowest First)</option>
+                </select>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="crm-table" id="client-table">
+                    <thead><tr><th>Vendor Name</th><th>Contact / Phone</th><th style="text-align:right;">Amount Owed (RM)</th><th style="text-align:center;">Action</th></tr></thead>
+                    <tbody id="client-list-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="view-orders" style="display:none;">
+            <div class="filter-bar" style="margin-bottom: 15px; display: flex; justify-content: flex-end;">
+                <strong style="font-size:12px; color:#555; margin-right: 10px;">Sort By:</strong>
+                <select id="sort-order-by" class="form-control" style="width:auto; padding:6px 12px; font-weight:bold; color:var(--primary);" onchange="loadCustomerOrders()">
+                    <option value="DATE_DESC">📅 Date (Newest First)</option>
+                    <option value="DATE_ASC">📅 Date (Oldest First)</option>
+                    <option value="AMT_DESC">💰 Amount (Highest First)</option>
+                    <option value="AMT_ASC">💰 Amount (Lowest First)</option>
+                </select>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="crm-table" id="order-table">
+                    <thead>
+                        <tr>
+                            <th style="width:12%;">Date</th>
+                            <th style="width:20%;">PO No.</th>
+                            <th style="width:25%;">Vendor & Deliver To</th>
+                            <th style="text-align:right; width:15%;">Amount (RM)</th>
+                            <th style="text-align:center; width:28%;">Action / Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="order-list-body"></tbody>
+                </table>
+            </div>
+        </div>
+        <div id="view-alldocs" style="display:none;">
+            <div class="filter-bar" style="margin-bottom: 15px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                <strong style="font-size:12px; color:#555;">Filter Type:</strong>
+                <select id="filter-doc-type" class="form-control" style="width:auto; padding:6px 12px; font-weight:bold;" onchange="currentDocPage=1; renderAllDocsTable()">
+                    <option value="ALL">ALL TYPES</option>
+                    <option value="PO">Purchase Orders</option>
+                    <option value="BILL">Vendor Bills</option>
+                    <option value="PV">Payment Vouchers</option>
+                    <option value="CNDN">Debit/Credit Notes</option>
+                </select>
+
+                <strong style="font-size:12px; color:#555; margin-left: 10px;">Sort By:</strong>
+                <select id="sort-doc-by" class="form-control" style="width:auto; padding:6px 12px; font-weight:bold; color:var(--primary);" onchange="currentDocPage=1; renderAllDocsTable()">
+                    <option value="DATE_DESC">📅 Date (Newest First)</option>
+                    <option value="DATE_ASC">📅 Date (Oldest First)</option>
+                    <option value="DOC_DESC">🔢 Doc No (Highest First)</option>
+                    <option value="DOC_ASC">🔢 Doc No (Lowest First)</option>
+                </select>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="crm-table">
+                    <thead>
+                        <tr>
+                            <th style="width:15%;">Doc No</th>
+                            <th style="width:12%;">Date</th>
+                            <th style="width:10%;">Type</th>
+                            <th style="width:30%;">Vendor Name</th>
+                            <th style="text-align:right; width:15%;">Total (RM)</th>
+                            <th style="text-align:center; width:18%;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="alldocs-list-body"></tbody>
+                </table>
+            </div>
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee;">
+                <button class="btn btn-outline" id="btn-prev-docs" onclick="changePageDocs(-1)">⬅️ Prev</button>
+                <span style="font-size:12px; font-weight:bold; color:#555;">Page <span id="lbl-page-docs">1</span> of <span id="lbl-total-docs">1</span></span>
+                <button class="btn btn-outline" id="btn-next-docs" onclick="changePageDocs(1)">Next ➡️</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="vault-section" class="no-print">
+    <button class="btn btn-outline" style="margin-bottom:15px; background:white;" onclick="closeVault()">⬅️ Back to Master List</button>
+    <div class="vault-header">
+        <div><h1 id="v-client-name" style="margin:0 0 5px 0; font-size:28px;">VENDOR NAME</h1><div id="v-client-info" style="font-size:13px; opacity:0.9;">ATTN: - | Tel: -</div></div>
+        <div class="vault-stat-box"><div style="font-size:11px; text-transform:uppercase; letter-spacing:1px; opacity:0.8;">Total Amount Owed</div><div style="font-size:28px; font-weight:800; color:#f1c40f;">RM <span id="v-client-outstanding">0.00</span></div></div>
+    </div>
+    <div class="vault-actions">
+        <button class="btn btn-primary" onclick="initDocument('PO')">📝 + New Purchase Order (PO)</button>
+        <button class="btn btn-danger" onclick="initDocument('BILL')">📥 + Record Vendor Bill (Inv)</button>
+        <button class="btn btn-success" style="background:#27ae60;" onclick="openBulkPaymentModal()">💸 + Pay Bills</button>
+        <!-- BUTANG BARU UNTUK DIRECT PAYMENT -->
+        <button class="btn btn-outline" style="background:#1abc9c; color:white; border:none;" onclick="initDocument('PV')">🚀 + Direct Payment (No Bill)</button>
+        <button class="btn btn-warning" onclick="initDocument('CNDN')">🔄 + Debit / Credit Note</button>
+    </div>
+    <div style="background:white; padding:20px; border-radius:8px; box-shadow: 0 5px 15px rgba(0,0,0,0.05);">
+        
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #eee; padding-bottom:10px; margin-bottom:15px; flex-wrap:wrap; gap:10px;">
+            <h3 style="margin:0; color:var(--nav-bg);">📑 Purchase & Payment History</h3>
+            <div style="display:flex; align-items:center; gap:10px;">
+                <span style="font-size:12px; font-weight:bold; color:#555;">Filter:</span>
+                <select id="vault-filter" class="form-control" style="width:auto; padding:6px 12px; font-size:12px; font-weight:bold; border-color:#ccc;" onchange="filterVault()">
+                    <option value="ALL">ALL DOCUMENTS</option>
+                    <option value="PO">📝 Purchase Orders</option>
+                    <option value="BILL">📥 Vendor Bills (Invoices)</option>
+                    <option value="PV">💸 Payment Vouchers</option>
+                    <option value="CNDN">🔄 Credit/Debit Notes</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="crm-table">
+                <thead><tr><th>Date</th><th>Doc Type & Ref</th><th>Project / Remarks</th><th style="text-align:right;">Amount (RM)</th><th style="text-align:center;">Status</th><th style="text-align:right;">Pipeline Actions</th></tr></thead>
+                <tbody id="vault-history-body"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div id="bulkPaymentModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="document.getElementById('bulkPaymentModal').style.display='none'">&times;</span>
+        <h3 style="margin-top:0; color:#2c3e50;">💸 Make Payment (Payment Voucher)</h3>
+        <p style="font-size:13px; color:#555;">Pay To: <strong id="bp-client-name" style="color:#000;"></strong></p>
+        
+        <div style="display:flex; gap:10px;">
+            <div class="form-group" style="flex:1;"><label>Payment Date</label><input type="date" id="bp-date" class="form-control"></div>
+            <div class="form-group" style="flex:1;"><label>Pay From (Ledger)</label>
+                <select id="bp-acc" class="form-control" style="background:#fce4ec; font-weight:bold; color:#d81b60;">
+                    <option value="BANK">🏦 Bank Account (Transfer/Cheque)</option>
+                    <option value="TUNAI">💵 Cash in Hand (Tunai)</option>
+                </select>
+            </div>
+        </div>
+        <div style="display:flex; gap:10px;">
+            <div class="form-group" style="flex:1;"><label>Payment Ref / Method</label><input type="text" id="bp-ref" class="form-control" style="text-transform:uppercase;" placeholder="Eg: MBB Transfer / Cheque No"></div>
+        </div>
+
+        <h4 style="margin-bottom:5px; border-bottom:2px solid #eee; padding-bottom:5px;">Tick Bills to Pay:</h4>
+        <p style="font-size:11px; color:#7f8c8d; margin-top:0;">*Tip: Enter amount LARGER than balance to auto-generate a Debit Note (Overpayment).</p>
+        <div style="margin-top:10px; max-height:200px; overflow-y:auto; border:1px solid #eee; border-radius:4px;">
+            <table class="crm-table" style="font-size:11px; margin:0;">
+                <thead style="position:sticky; top:0; background:#f4f6f8; z-index:10;">
+                    <tr>
+                        <th style="text-align:center;">Pay</th>
+                        <th>Vendor Inv No</th>
+                        <th style="text-align:right;">Balance Owed</th>
+                        <th style="text-align:right;">Pay Amount (RM)</th>
+                    </tr>
+                </thead>
+                <tbody id="bp-inv-list"></tbody>
+            </table>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px; background:#f9f9f9; padding:15px; border-radius:6px; border:1px dashed #ccc;">
+            <div style="font-size:14px; font-weight:bold; color:#555;">Total Payout: <br><span style="font-size:22px; color:#e74c3c;">RM <span id="bp-applied-total">0.00</span></span></div>
+            <button class="btn btn-primary" style="padding:12px 20px; font-size:14px;" onclick="processBulkPayment()">✅ Generate P.V.</button>
+        </div>
+    </div>
+</div>
+
+<div id="tab-aging" class="ageing-box">
+    <div class="controls no-print" style="justify-content: space-between; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px;">
+        <div>
+            <button class="btn btn-outline" onclick="closeAgeing()">⬅️ Back to AP</button>
+            <button class="btn btn-primary" onclick="loadAgeingReport('summary')" style="margin-left: 15px;">📊 Summary (Creditor Balances)</button>
+            <button class="btn btn-warning" onclick="loadAgeingReport('detail')">📋 Detail (Creditors Ageing)</button>
+        </div>
+        <button class="btn btn-success" onclick="printAgeing()">🖨️ Print Report</button>
+    </div>
+
+    <div class="document-box" style="max-width: 100%; padding: 40px;">
+        <div style="display:flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px;">
+            <div>
+                <div style="font-weight:bold; font-size: 12px; margin-bottom: 5px;">Date: <span id="aging-as-at" style="margin-left:20px;"></span></div>
+                <div style="font-weight:bold; font-size: 12px;">Currency: <span style="margin-left:20px;">MYR - RINGGIT MALAYSIA</span></div>
+            </div>
+            <div style="display: flex; flex-direction: column; align-items: flex-end; text-align: right;">
+                <img id="aging-logo" src="" style="max-height: 80px; object-fit: contain; margin-bottom: 10px; display:none;">
+                <h2 id="aging-co-name" style="margin:0 0 5px 0; font-size:18px;">COMPANY NAME</h2>
+                <h3 id="aging-title" style="margin:0; font-size:14px; color: #555;">CREDITORS BALANCES AS AT</h3>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="ageing-table-print">
+                <thead id="aging-thead"></thead>
+                <tbody id="aging-tbody"></tbody>
+                <tfoot id="aging-tfoot"></tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div id="soa-section">
+    <div class="document-box" style="padding: 40px; border: 1px solid #000; box-shadow: 0 10px 30px rgba(0,0,0,0.1);" id="soa-outer-box">
+        <div style="border: 2px solid #000; padding: 25px; background: #fff;">
+            <h2 style="margin:0 0 20px 0; font-size: 20px; font-family: Arial; text-transform:uppercase;">CREDITOR STATEMENT OF ACCOUNT</h2>
+            
+            <div style="display:flex; justify-content:space-between; margin-bottom:30px; font-family: Arial; font-size: 13px; line-height: 1.6;">
+                <div style="width: 45%;">
+                    <div><strong>Vendor:</strong> <span id="soa-client-name" style="text-transform: uppercase;"></span></div>
+                    <div id="soa-client-addr" style="white-space:pre-wrap; margin-top:5px;"></div>
+                </div>
+                <div style="width: 45%; display: flex; flex-direction: column; align-items: flex-end; text-align:right;">
+                    <img id="soa-logo" src="" style="max-height: 80px; object-fit: contain; margin-bottom: 10px; display:none;">
+                    <div id="soa-co-name" style="font-weight:bold; font-size: 15px; text-transform: uppercase;"></div>
+                    <div id="soa-co-addr" style="white-space:pre-wrap; margin-top:5px;"></div>
+                    <div style="margin-top:15px;"><strong>Date:</strong> <span id="soa-date"></span></div>
+                </div>
+            </div>
+            
+            <table class="soa-table" style="width:100%; border-collapse:collapse; border:1px solid #000; font-family: Arial;">
+                <thead>
+                    <tr style="border-bottom:1px solid #000;">
+                        <th style="width: 15%;">DATE</th>
+                        <th style="width: 40%;">TRANSACTION</th>
+                        <th style="text-align:right; width: 15%;">CREDIT (BIL)</th>
+                        <th style="text-align:right; width: 15%;">DEBIT (BAYAR)</th>
+                        <th style="text-align:right; width: 15%;">BALANCE</th>
+                    </tr>
+                </thead>
+                <tbody id="soa-tbody"></tbody>
+            </table>
+        </div>
+    </div>
+    
+    <div class="floating-bar no-print">
+        <button class="btn btn-outline" onclick="closeSOA()">⬅️ Back to Ageing</button>
+        <button class="btn btn-success" onclick="printSOA()">🖨️ Print SOA</button>
+    </div>
+</div>
+
+<div id="editor-section">
+    <div class="document-box">
+        
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 30px; border-bottom: 1px solid #000; padding-bottom: 20px;">
+            <div style="width: 50%; padding-right: 20px; text-align: left;">
+                <img id="doc-logo" src="" style="max-height: 80px; max-width: 100%; object-fit: contain; display: block; margin-bottom:10px;">
+                <div id="doc-co-name" style="font-size: 15px; font-weight: bold; width:100%; color:#000; margin-bottom:2px; text-transform:uppercase; text-align: left;"></div>
+                <div id="doc-co-addr" style="font-size:11px; color:#333; line-height:1.4; white-space:pre-wrap; text-align: left;"></div>
+                <div id="doc-co-tin" style="font-size:11px; color:#333; margin-top:2px; font-weight:bold; display:none; text-align: left;"></div>
+            </div>
+            
+            <div style="width: 45%; text-align: right;">
+                <h1 id="doc-title-display" style="font-size: 28px; margin: 0 0 15px 0; color:#000; font-weight:bold; letter-spacing:1px;">PURCHASE ORDER</h1>
+                <table style="width: 260px; margin-left: auto; border-collapse:collapse; font-size:11px; text-align:right;">
+                    <tr><td style="padding:4px 10px 4px 0; font-weight:bold; color:#555; white-space:nowrap;">Date :</td><td style="padding:4px 0;"><input type="date" id="doc-date" class="doc-input" style="width:125px; font-weight:bold; text-align:right;"></td></tr>
+                    <tr><td style="padding:4px 10px 4px 0; font-weight:bold; color:#555; white-space:nowrap;" id="doc-ref-label">PO No :</td><td style="padding:4px 0;"><input type="text" id="doc-no" class="doc-input" style="width:125px; font-weight:bold; text-align:right;"></td></tr>
+                    
+                    <tr id="row-top-extra" class="non-pv"><td style="padding:4px 10px 4px 0; font-weight:bold; color:#555; white-space:nowrap;" id="doc-extra-label">Terms :</td><td style="padding:4px 0;"><input type="text" id="doc-extra-input" class="doc-input" style="width:125px; font-weight:bold; text-align:right;" placeholder="-"></td></tr>
+                    <tr id="row-top-amount" class="non-pv"><td style="padding:4px 10px 4px 0; font-weight:bold; color:#555; white-space:nowrap;">Amount :</td><td style="padding:4px 0; font-weight:bold; color:#000; white-space:nowrap;">MYR <span id="doc-top-amount">0.00</span></td></tr>
+                    
+                    <tr class="pv-only" style="display:none;"><td style="padding:4px 10px 4px 0; font-weight:bold; color:#555; white-space:nowrap;">Page :</td><td style="padding:4px 0; font-weight:bold;">1</td></tr>
+                </table>
+            </div>
+        </div>
+
+        <div id="doc-middle-section" style="display:flex; justify-content:space-between; margin-bottom: 25px; font-size:11px;">
+            
+            <div id="pv-supplier-bank-info" class="pv-only" style="display:none; margin-bottom: 10px; font-size:11px; width: 50%;">
+                <div id="pv-bank-selector-container" class="no-print" style="display:none; margin-bottom:10px; background:#e0f7fa; padding:10px; border-radius:4px; border:1px dashed #00bcd4;">
+                    <label style="font-weight:bold; color:#00796b; display:block; margin-bottom:5px;">Select Vendor Bank:</label>
+                    <select id="pv-bank-selector" class="doc-input" style="width:100%; font-weight:bold; background:white; border:1px solid #ccc; padding:4px; border-radius:4px;" onchange="changeVendorBank(this)"></select>
+                </div>
+                <table style="border-collapse:collapse; width:100%;">
+                    <tr>
+                        <td style="width:90px; font-weight:bold; padding-bottom:3px;">Account No.</td><td style="width:10px;">:</td>
+                        <td>
+                            <input type="text" id="pv-supp-bankac" class="doc-input" style="width:100%; font-weight:bold;" placeholder="-" oninput="this.nextElementSibling.innerText=this.value">
+                            <div class="print-mirror" style="font-weight:bold;"></div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight:bold;">Account Name</td><td>:</td>
+                        <td>
+                            <input type="text" id="pv-supp-bankname" class="doc-input" style="width:100%; font-weight:bold; text-transform:uppercase;" placeholder="-" oninput="this.nextElementSibling.innerText=this.value">
+                            <div class="print-mirror" style="font-weight:bold; text-transform:uppercase;"></div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <div style="width: 45%;">
+                <div style="font-weight:bold; margin-bottom:5px; color:#555; text-transform:uppercase;" id="doc-billto-label">To Vendor:</div>
+                <input type="text" id="doc-custName" class="doc-input" style="width:100%; font-size:12px; font-weight:bold; margin-bottom:2px; text-transform:uppercase;" readonly>
+                <textarea id="doc-custAddr" class="doc-textarea" rows="3" style="width:100%; font-size:11px; line-height:1.4;" oninput="document.getElementById('doc-custAddr-mirror').innerText=this.value; autoResize(this)"></textarea>
+                <div id="doc-custAddr-mirror" class="print-mirror" style="font-size:11px; line-height:1.4; white-space:pre-wrap;"></div>
+                <div class="non-pv" id="doc-attn-row" style="margin-top:10px;">
+                    <table style="width:100%; font-size:11px; border-collapse:collapse;">
+                        <tr>
+                            <td style="width:35px; font-weight:bold; color:#555; vertical-align:top; padding:2px 0;">Attn</td>
+                            <td style="width:10px; vertical-align:top; padding:2px 0;">:</td>
+                            <td style="padding:2px 0;">
+                                <input type="text" id="doc-attn" class="doc-input" style="width:100%; font-weight:bold; text-transform:uppercase;" oninput="this.nextElementSibling.innerText=this.value">
+                                <div class="print-mirror" style="font-weight:bold; text-transform:uppercase;"></div>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <div id="bill-bank-info" style="display:none; margin-top:15px; font-size:11px; padding:10px; background:#f8f9fa; border:1px dashed #ccc; border-radius:4px;">
+                    <div style="font-weight:bold; color:#555; margin-bottom:5px; text-transform:uppercase;">Bank / Remittance Details:</div>
+                    <table style="width:100%; border-collapse:collapse;">
+                        <tr><td style="width:80px; padding:2px 0;">A/C Name</td><td style="width:10px;">:</td><td><strong id="bill-bank-name">-</strong></td></tr>
+                        <tr><td style="padding:2px 0;">A/C No.</td><td>:</td><td><strong id="bill-bank-ac">-</strong></td></tr>
+                    </table>
+                </div>
+            </div>
+            
+            <div style="width: 45%;" class="non-pv">
+                <div style="font-weight:bold; margin-bottom:5px; color:#555;" id="doc-proj-label">Project / Deliver To:</div>
+                <textarea id="doc-project" class="doc-textarea" rows="3" style="width:100%; font-size:11px; font-weight:bold; line-height:1.4;" oninput="document.getElementById('doc-project-mirror').innerText=this.value; autoResize(this)"></textarea>
+                <div id="doc-project-mirror" class="print-mirror" style="font-size:11px; font-weight:bold; line-height:1.4; white-space:pre-wrap;"></div>
+            </div>
+        </div>
+
+        <div id="po-exclusive-layout" style="display:none; width:100%; font-family:Arial, sans-serif; margin-top:10px;">
+
+            <div style="display:flex; justify-content:space-between; margin-bottom:30px;">
+                <div style="width:48%;">
+                    <strong style="font-size:13px;">Purchase Order To:</strong><br>
+                    <input type="text" id="po-supp-name" class="doc-input" style="width:100%; font-weight:bold; margin-top:5px;" placeholder="Vendor Name" oninput="document.getElementById('po-supp-name-m').innerText=this.value">
+                    <div id="po-supp-name-m" class="print-mirror" style="font-weight:bold; margin-top:5px;"></div>
+                    <textarea id="po-supp-addr" class="doc-textarea" style="width:100%; margin-top:2px;" rows="4" placeholder="Street Address\nCity, ST ZIP\nPhone: ..." oninput="document.getElementById('po-supp-addr-m').innerText=this.value"></textarea>
+                    <div id="po-supp-addr-m" class="print-mirror" style="white-space:pre-wrap; margin-top:2px; font-size:12px;"></div>
+                </div>
+                <div style="width:48%;">
+                    <strong style="font-size:13px;">Ship To:</strong><br>
+                    <input type="text" id="po-ship-name" class="doc-input" style="width:100%; font-weight:bold; margin-top:5px;" placeholder="Company Name" oninput="document.getElementById('po-ship-name-m').innerText=this.value">
+                    <div id="po-ship-name-m" class="print-mirror" style="font-weight:bold; margin-top:5px;"></div>
+                    <textarea id="po-ship-addr" class="doc-textarea" style="width:100%; margin-top:2px;" rows="4" placeholder="Street Address\nCity, ST ZIP\nPhone: ..." oninput="document.getElementById('po-ship-addr-m').innerText=this.value"></textarea>
+                    <div id="po-ship-addr-m" class="print-mirror" style="white-space:pre-wrap; margin-top:2px; font-size:12px;"></div>
+                </div>
+            </div>
+
+            <strong style="font-size:14px;">SERVICES</strong>
+            <table style="width:100%; border-collapse:collapse; margin-bottom:0; margin-top:5px;">
+                <thead>
+                    <tr style="border-bottom:1px solid #000; font-size:12px;">
+                        <th style="width:5%; text-align:left; padding:5px;">#</th>
+                        <th style="width:40%; text-align:left; padding:5px;">Service Description</th>
+                        <th style="width:20%; text-align:center; padding:5px;">Time Range (Days)</th>
+                        <th style="width:15%; text-align:right; padding:5px;">Price (per hours)</th>
+                        <th style="width:20%; text-align:right; padding:5px;">TOTAL PRICE</th>
+                        <th class="no-print" style="width:5%;"></th>
+                    </tr>
+                </thead>
+                <tbody id="po-services-body"></tbody>
+            </table>
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:5px 0; border-top:1px solid #000; margin-bottom:30px;">
+                <button class="btn btn-outline no-print" onclick="addPoServiceRow()">+ Add Service</button>
+                <div style="font-weight:bold; font-size:13px; display:flex; width:40%; justify-content:space-between;">
+                    <span>TOTAL SERVICES:</span>
+                    <span>MYR <span id="po-tot-services">0.00</span></span>
+                </div>
+            </div>
+
+            <strong style="font-size:14px;">MATERIALS</strong>
+            <table style="width:100%; border-collapse:collapse; margin-bottom:0; margin-top:5px;">
+                <thead>
+                    <tr style="border-bottom:1px solid #000; font-size:12px;">
+                        <th style="width:5%; text-align:left; padding:5px;">#</th>
+                        <th style="width:40%; text-align:left; padding:5px;">Item Description</th>
+                        <th style="width:20%; text-align:center; padding:5px;">Qty</th>
+                        <th style="width:15%; text-align:right; padding:5px;">Price</th>
+                        <th style="width:20%; text-align:right; padding:5px;">TOTAL PRICE</th>
+                        <th class="no-print" style="width:5%;"></th>
+                    </tr>
+                </thead>
+                <tbody id="po-materials-body"></tbody>
+            </table>
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:5px 0; border-top:1px solid #000; margin-bottom:30px;">
+                <button class="btn btn-outline no-print" onclick="addPoMaterialRow()">+ Add Material</button>
+                <div style="font-weight:bold; font-size:13px; display:flex; width:40%; justify-content:space-between;">
+                    <span>TOTAL MATERIALS:</span>
+                    <span>MYR <span id="po-tot-materials">0.00</span></span>
+                </div>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-top:150px;">
+                <div style="width:55%;">
+                    <div style="font-size:11px; margin-bottom:10px; line-height:1.4;">
+                        This Purchase Order is for completing the job as described above.<br>
+                        It is based on evaluation of the use of the physical, human, financial, and informational resources required to complete work.<br><br>
+                        If you have any questions about this purchase order, please contact:<br>
+                        <textarea id="po-contact-info" class="doc-textarea" style="width:100%; font-weight:bold; font-size:11px;" rows="1" oninput="document.getElementById('po-contact-info-m').innerText=this.value">[Your Name], [Phone Number], [Email]</textarea>
+                        <div id="po-contact-info-m" class="print-mirror" style="font-weight:bold; font-size:11px;"></div>
+                    </div>
+                    <textarea id="po-custom-notes" class="doc-textarea" style="width:100%; font-size:11px; color:#333; margin-top:10px;" rows="3" placeholder="Additional Notes & Terms..." oninput="document.getElementById('po-custom-notes-m').innerText=this.value"></textarea>
+                    <div id="po-custom-notes-m" class="print-mirror" style="font-size:11px; white-space:pre-wrap; margin-top:5px;"></div>
+                </div>
+                <div style="width:35%; text-align:right;">
+                    <strong style="font-size:14px;">TOTAL JOB COST</strong><br>
+                    <strong style="font-size:16px;">MYR <span id="po-grand-total">0.00</span></strong>
+                </div>
+            </div>
+
+            <div style="margin-top:30px; font-weight:bold; font-size:12px;">
+                Your written acknowledgement of the above order is requested within 
+                <input type="number" id="po-ack-days" style="width:40px; text-align:center; border:none; border-bottom:1px solid #000; font-weight:bold;" value="7"> days.
+            </div>
+
+            <div style="display:flex; justify-content:space-between; margin-top:80px; font-size:11px; text-align:center;">
+                <div style="width:22%; border-top:1px solid #000; padding-top:5px;">
+                    <div id="po-comp-1" style="font-weight:bold; margin-bottom:5px;">Company Name</div>(Prepared by)<br><br>Date:
+                </div>
+                <div style="width:22%; border-top:1px solid #000; padding-top:5px;">
+                    <div id="po-comp-2" style="font-weight:bold; margin-bottom:5px;">Company Name</div>(Verify by)<br><br>Date:
+                </div>
+                <div style="width:22%; border-top:1px solid #000; padding-top:5px;">
+                    <div id="po-comp-3" style="font-weight:bold; margin-bottom:5px;">Company Name</div>(Approved by)<br><br>Date:
+                </div>
+                <div style="width:25%; border-top:1px solid #000; padding-top:5px; text-align:left; padding-left:10px;">
+                    <strong>VENDOR ACKNOWLEDGEMENT</strong><br><br><br>Name:<br>Date:
+                </div>
+            </div>
+        </div>
+        <div id="standard-doc-wrapper" class="table-responsive" style="margin-bottom: 10px;">
+            <table style="width:100%; border-collapse:collapse; font-size:11px; border:1px solid #000;">
+
+        <div class="table-responsive" style="margin-bottom: 10px;">
+            <table style="width:100%; border-collapse:collapse; font-size:11px; border:1px solid #000;">
+                <thead>
+                    <tr style="border-bottom:1px solid #000; background:#f9f9f9; color:#000;">
+                        <th class="bill-ac" style="display:none; padding:8px; text-align:left; border-right:1px solid #000; width:15%;">A/C No.</th>
+                        <th class="bill-ac" style="display:none; padding:8px; text-align:left; border-right:1px solid #000; width:20%;">A/C Name</th>
+                        
+                        <th style="padding:8px; text-align:left; border-right:1px solid #000;" id="th-desc">Description</th>
+                        
+                        <th class="col-standard" style="padding:8px; text-align:center; border-right:1px solid #000; width:10%;">Qty</th>
+                        <th class="col-standard" style="padding:8px; text-align:center; border-right:1px solid #000; width:10%;">U/M</th>
+                        
+                        <th style="padding:8px; text-align:right; border-right:1px solid #000; width:15%;" id="th-rate">Unit Price</th>
+                        
+                        <th class="col-standard" style="padding:8px; text-align:right; width:15%;" id="th-calc">Total</th>
+                        <th class="no-print" style="width:3%;"></th>
+                    </tr>
+                </thead>
+                <tbody id="doc-items"></tbody>
+                
+                <tfoot id="pv-tfoot" style="display:none;">
+                    <tr>
+                        <td colspan="3" style="text-align:right; font-weight:bold; font-size:13px; padding:10px 8px; border-right:1px solid #000;">MYR :</td>
+                        <td style="text-align:right; font-weight:bold; font-size:14px; padding:10px 8px; border-right:1px solid #000;"><span style="border-bottom:3px double #000; padding-bottom:2px;" id="pv-total-text">0.00</span></td>
+                        <td class="no-print"></td>
+                    </tr>
+                </tfoot>
+            </table>
+            <button class="btn btn-add no-print" style="margin-top:10px; font-size:10px;" onclick="addDocRow()">+ Add Item Row</button>
+        </div>
+
+        <div id="doc-rm-words" style="display:none; margin-bottom: 20px; padding: 10px; border: 1px solid #000; background: #f9f9f9; font-weight: bold; font-style: italic; font-size: 11px;">
+            RINGGIT MALAYSIA: <span id="rm-words-text">ZERO ONLY</span>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; margin-top: 150px; font-size:11px; page-break-inside: avoid;">
+            
+            <div style="width: 50%;">
+                <div class="non-pv" style="font-weight:bold; margin-bottom:5px; color:#555;">Additional Notes:</div>
+                <textarea id="doc-terms" class="doc-textarea non-pv" rows="4" style="width:100%; font-size:11px; line-height:1.5;" oninput="document.getElementById('doc-terms-mirror').innerText=this.value; autoResize(this)"></textarea>
+                <div id="doc-terms-mirror" class="print-mirror non-pv" style="font-size:11px; line-height:1.5; white-space:pre-wrap;"></div>
+                
+                <div id="doc-auto-sign" class="non-pv" style="margin-top:25px; font-size:11px; color:#000; font-style:italic;">Generated automatically. No signature is required.</div>
+                
+                <div id="po-signature-new" class="po-only" style="display:none; justify-content:space-between; margin-top:40px; align-items: flex-end; font-family: Arial, sans-serif;">
+                    <div style="width: 55%; font-size: 11px; line-height: 1.5; color: #333;">
+                        This Purchase Order is for completing the job as described above.<br>
+                        It is based on evaluation of the use of the physical, human, financial, and informational resources required to complete work.<br><br>
+                        If you have any questions about this purchase order, please contact:<br>
+                        <strong>[Management / Admin], [Phone Number], [Email]</strong>
+                    </div>
+                    <div style="width: 40%; font-size: 12px;">
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <tr>
+                                <td style="padding: 10px 10px 10px 0; text-align: right;">Accepted By:</td>
+                                <td style="border-bottom: 1px solid #000; width: 150px;"></td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 10px 10px 10px 0; text-align: right;">Date:</td>
+                                <td style="border-bottom: 1px solid #000; width: 150px;"></td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 10px 10px 10px 0; text-align: right;">Approved By:</td>
+                                <td style="border-bottom: 1px solid #000; width: 150px;"></td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div style="width: 40%; display: flex; flex-direction:column; align-items: flex-end; margin-left: auto;" id="doc-totals-box">
+                <table class="non-pv" style="width: 250px; border-collapse:collapse; font-size:12px; font-weight:bold; color:#000;">
+                    <tr><td style="padding:6px 0; text-align:left; color:#555;">Sub Total</td><td style="padding:6px 10px 6px 0; text-align:right;">RM <span id="doc-subtotal">0.00</span></td></tr>
+                    <tr id="doc-discountRow"><td style="padding:6px 0; text-align:left; color:#e74c3c;" id="doc-disc-label">Discount</td><td style="padding:6px 10px 6px 0; text-align:right; color:#e74c3c;">- RM <input type="number" id="doc-discount" class="doc-input" value="0.00" step="0.01" style="width:60px; text-align:right; font-weight:bold; color:#e74c3c;" oninput="calcUnifiedDoc()"></td></tr>
+                    <tr style="border-top:1px solid #000;"><td style="padding:10px 0; text-align:left; font-size:14px;">Grand Total</td><td style="padding:10px 10px 10px 0; text-align:right; font-size:14px;">RM <span id="doc-total">0.00</span></td></tr>
+                </table>
+            </div>
+        </div> 
+
+        <div id="pv-signatures" class="pv-only" style="display:none; justify-content:space-between; margin-top:60px; text-align:center; font-size:11px; width:100%; page-break-inside: avoid; align-items: flex-start;">
+            <div style="width: 22%;">
+                <div style="border-bottom:1px solid #000; height:40px;"></div>
+                <div style="margin-top:5px; font-weight:bold;">Prepared By</div>
+            </div>
+            <div style="width: 22%;">
+                <div style="border-bottom:1px solid #000; height:40px;"></div>
+                <div style="margin-top:5px; font-weight:bold;">Verified By</div>
+            </div>
+            <div style="width: 22%;">
+                <div style="border-bottom:1px solid #000; height:40px;"></div>
+                <div style="margin-top:5px; font-weight:bold;">Approved By</div>
+            </div>
+            
+            <div style="width: 25%; text-align:center;">
+                <div style="border-bottom:1px solid #000; height:40px;"></div>
+                <div style="margin-top:5px; font-weight:bold;">Received By</div>
+                <div style="text-align:left; margin-top:10px; line-height:1.8; font-size:10px;">
+                    <div style="white-space:nowrap;">Name &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: ...............................</div>
+                    <div style="white-space:nowrap;">NRIC No &nbsp;: ...............................</div>
+                    <div style="white-space:nowrap;">Date &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: ...............................</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="cndn-bank-info" style="display:none; margin-top:40px; font-size:11px; page-break-inside: avoid;">
+            <table style="width:60%; border-collapse:collapse;">
+                <tr>
+                    <td style="width:120px; font-weight:bold; padding:3px 0;">*Bank Name</td>
+                    <td style="width:10px;">:</td>
+                    <td>
+                        <input type="text" id="cndn-bank-name" class="doc-input" style="width:100%; font-weight:bold; text-transform:uppercase;" placeholder="-" oninput="this.nextElementSibling.innerText=this.value">
+                        <div class="print-mirror" style="font-weight:bold; text-transform:uppercase;"></div>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="font-weight:bold; padding:3px 0;">*Bank Account No.</td>
+                    <td>:</td>
+                    <td>
+                        <input type="text" id="cndn-bank-ac" class="doc-input" style="width:100%; font-weight:bold;" placeholder="-" oninput="this.nextElementSibling.innerText=this.value">
+                        <div class="print-mirror" style="font-weight:bold;"></div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <div id="cndn-signatures" style="display:none; justify-content:space-between; margin-top:80px; font-size:11px; width:100%; page-break-inside: avoid; font-family: Arial, sans-serif;">
+            <div style="width: 30%; text-align:center;">
+                <div style="border-bottom:1px solid #000; height:40px;"></div>
+                <div style="margin-top:5px; font-weight:bold; text-transform:uppercase;">Received / Accepted By</div>
+                <div style="text-align:left; font-size:10px; margin-top:5px; color:#555;">Company Chop & Signature</div>
+            </div>
+            <div style="width: 30%; text-align:center;">
+                <div style="border-bottom:1px solid #000; height:40px;"></div>
+                <div style="margin-top:5px; font-weight:bold; text-transform:uppercase;">Issued By / Authorized Signature</div>
+                <div style="text-align:left; font-size:10px; margin-top:5px; color:#555;">Name:</div>
+            </div>
+        </div>
+
+    </div> 
+    
+    <div class="floating-bar no-print" id="editor-bar">
+        <button class="btn btn-outline" onclick="closeEditor()">❌ Cancel</button>
+        <button class="btn btn-primary" onclick="saveUnifiedDoc()" id="btn-save-doc">💾 Save Document</button>
+        <button class="btn btn-success" onclick="printUnifiedDoc()">🖨️ Print Document</button>
+    </div>
+</div>
+<datalist id="db-item-list"></datalist>
+
+<datalist id="db-ac-list"></datalist>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, getDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyCjJab1uItHC62ZfZVD5nMtZZtm76fc46Y",
+        authDomain: "sistem313-8bba4.firebaseapp.com",
+        projectId: "sistem313-8bba4",
+        storageBucket: "sistem313-8bba4.firebasestorage.app",
+        messagingSenderId: "613290008986",
+        appId: "1:613290008986:web:a16e7141ab8f0e5dd89a23"
+    };
+    
+    const app = initializeApp(firebaseConfig);
+    window.auth = getAuth(app); 
+    window.db = getFirestore(app); 
+    window.setDoc = setDoc; 
+    window.getDoc = getDoc; 
+    window.doc = doc;
+    window.collection = collection; 
+    window.getDocs = getDocs; 
+
+    onAuthStateChanged(window.auth, async (user) => {
+        if (user) { 
+            window.currentUserUID = user.uid; 
+            try {
+                const userDoc = await getDoc(doc(window.db, "users", user.uid));
+                if (userDoc.exists()) {
+                    let userData = userDoc.data();
+                    window.currentCompanyId = userData.company_id; 
+                    
+                    if (userData.role === 'staff') { document.body.classList.add('role-staff'); } 
+                    else { document.body.classList.remove('role-staff'); }
+                    
+                    let loadingBox = document.getElementById('loadingOverlay');
+                    if (loadingBox) loadingBox.style.display = 'flex';
+                    
+                    if(window.pullDataFromCloud) await window.pullDataFromCloud();
+                    if(window.loadCompanyProfileFromCloud) await window.loadCompanyProfileFromCloud();
+                    if(window.loadDatabaseFromCloud) await window.loadDatabaseFromCloud();
+                    
+                    if (loadingBox) loadingBox.style.display = 'none';
+                    
+                    if(window.initApp) window.initApp(); 
+                }
+            } catch(e) { console.error("Gagal baca data user:", e); }
+        } 
+        else { 
+            localStorage.clear(); 
+            window.location.href = 'index.html'; 
+        }
+    });
+</script>
+
+<script>
+    const _originalSetItem = Storage.prototype.setItem;
+    const _originalGetItem = Storage.prototype.getItem;
+    
+    window._rawSet = function(k, v) { _originalSetItem.call(localStorage, k, v); };
+    window._rawGet = function(k) { return _originalGetItem.call(localStorage, k); };
+
+    const SECRET_KEY = "TigaLimaProPremium";
+    
+    function decryptData(data) {
+        try {
+            if(!data) return null;
+            if(data.startsWith("ENC2:")) return decodeURIComponent(atob(data.replace("ENC2:", "")));
+            if(data.startsWith("ENC:")) {
+                let raw = atob(data.replace("ENC:", "")); let xor = "";
+                for(let i=0; i<raw.length; i++) xor += String.fromCharCode(raw.charCodeAt(i) ^ SECRET_KEY.charCodeAt(i % SECRET_KEY.length));
+                return decodeURIComponent(escape(atob(xor)));
+            }
+            return data;
+        } catch(e) { return "[]"; }
+    }
+
+    function encryptData(data) {
+        try { return "ENC2:" + btoa(encodeURIComponent(data)); } catch(e) { return data; }
+    }
+
+    Storage.prototype.getItem = function(key) {
+        let val = window._rawGet(key);
+        if (!val) return val;
+        
+        if (typeof val === 'string' && (val.startsWith("ENC:") || val.startsWith("ENC2:"))) {
+            val = decryptData(val);
+            if(val !== "[]") window._rawSet(key, encryptData(val)); 
+        }
+        
+        if (key.includes('History') || key.includes('_db_') || key === 'sys_expenses' || key === 'sys_db_accounts') {
+            try { JSON.parse(val); } catch(e) { val = "[]"; window._rawSet(key, val); }
+        }
+        return val;
+    };
+
+    Storage.prototype.setItem = function(key, val) {
+        window._rawSet(key, encryptData(val));
+        if(key.startsWith('sys_') && key !== 'sys_lastUpdated') {
+            window._rawSet('sys_lastUpdated', Date.now().toString()); 
+            clearTimeout(window.syncTimer);
+            window.syncTimer = setTimeout(() => { if(window.forceSyncToFirebase) window.forceSyncToFirebase(); }, 1500);
+        }
+    };
+
+   window.forceSyncToFirebase = async function() {
+        if(!window.currentCompanyId || !window.db) return; 
+        let dataToSave = {};
+        for(let i=0; i<localStorage.length; i++) {
+            let key = localStorage.key(i);
+            if(key.startsWith('sys_')) { dataToSave[key] = window._rawGet(key); }
+        }
+        try { 
+            await window.setDoc(window.doc(window.db, "companies", window.currentCompanyId, "system_backup", "local_data"), dataToSave, { merge: true }); 
+        } catch(e) { console.error("Sync Error:", e); }
+    };
+
+    window.pullDataFromCloud = async function() {
+        if(!window.currentCompanyId || !window.db) return;
+        try {
+            const snap = await window.getDoc(window.doc(window.db, "companies", window.currentCompanyId, "system_backup", "local_data"));
+            if (snap.exists()) {
+                let cloudData = snap.data();
+                for (let key in cloudData) { window._rawSet(key, cloudData[key]); }
+            }
+        } catch (error) { console.error("Gagal muat turun data syarikat:", error); }
+    };
+
+    window.loadCompanyProfileFromCloud = async function() {
+        if(!window.currentCompanyId || !window.db) return;
+        try {
+            const docSnap = await window.getDoc(window.doc(window.db, "companies", window.currentCompanyId));
+            if (docSnap.exists()) {
+                let data = docSnap.data();
+                let def = {
+                    name: data.company_name || "COMPANY NAME",
+                    tin: data.tin_number || "",
+                    addr: data.address || "",
+                    bank: (data.bank_name ? data.bank_name + " - " : "") + (data.bank_ac || ""),
+                    bankName: data.bank_name || "",
+                    bankAc: data.bank_ac || "",
+                    logo: data.logo || "",
+                    logoHeight: data.logoHeight || 120
+                };
+                localStorage.setItem('sys_companyDefaults', JSON.stringify(def));
+                
+                let logoEl = document.getElementById('doc-logo');
+                if(logoEl && def.logo) { logoEl.src = def.logo; logoEl.style.display = 'block'; logoEl.style.height = def.logoHeight + 'px'; }
+                let coNameEl = document.getElementById('doc-co-name');
+                if(coNameEl) coNameEl.innerText = def.name;
+                let coAddrEl = document.getElementById('doc-co-addr');
+                if(coAddrEl) coAddrEl.innerText = def.addr;
+                
+                let coTinEl = document.getElementById('doc-co-tin');
+                if(coTinEl) {
+                    if (def.tin && def.tin.trim() !== "") { coTinEl.innerText = "TIN: " + def.tin; coTinEl.style.display = 'block'; } 
+                    else { coTinEl.style.display = 'none'; }
+                }
+            }
+        } catch (error) { console.error("Gagal muat turun profil syarikat:", error); }
+    };
+
+    window.loadDatabaseFromCloud = async function() {
+        if (!window.currentCompanyId || !window.db) return;
+        try {
+            // (Kod Supplier kita dah tutup sebelum ni, biarkan tertutup)
+            
+            const itemsSnap = await window.getDocs(window.collection(window.db, "companies", window.currentCompanyId, "items"));
+            let itemsArray = [];
+            itemsSnap.forEach(doc => { let itm = doc.data(); itemsArray.push({ name: itm.name, price: itm.price }); });
+            localStorage.setItem('sys_db_items', JSON.stringify(itemsArray));
+
+            // ---> KOD BARU: TARIK CHART OF ACCOUNTS <---
+            const accountsSnap = await window.getDocs(window.collection(window.db, "companies", window.currentCompanyId, "accounts"));
+            let accountsArray = [];
+            accountsSnap.forEach(doc => { accountsArray.push(doc.data()); });
+            localStorage.setItem('sys_db_accounts', JSON.stringify(accountsArray));
+
+        } catch (error) { console.error("Gagal tarik database Klien/Items/Accounts:", error); }
+    };
+
+    // ==========================================
+    let currentClient = null; let activeDocMode = null; let editingDocId = null;  
+    let allDocsMasterData = [];
+    let currentDocPage = 1;
+    const docsPerPage = 15;
+
+    window.addVendorBankRow = function(bName = '', bAc = '', aName = '') {
+        let container = document.getElementById('vendor-bank-list');
+        let div = document.createElement('div');
+        div.className = 'bank-entry';
+        // Guna flex-wrap supaya kalau skrin kecil, ia susun cantik ke bawah
+        div.style.cssText = "display:flex; flex-wrap:wrap; gap:5px; margin-bottom:10px; padding-bottom:10px; border-bottom:1px dashed #ccc;";
+        div.innerHTML = `
+            <input type="text" class="form-control b-name" placeholder="Bank (Cth: MAYBANK)" value="${bName}" style="flex:1; min-width:120px; text-transform:uppercase;">
+            <input type="text" class="form-control b-ac" placeholder="A/C No" value="${bAc}" style="flex:1; min-width:120px;">
+            <input type="text" class="form-control a-name" placeholder="A/C Holder Name" value="${aName}" style="flex:2; min-width:200px; text-transform:uppercase;">
+            <button type="button" class="btn btn-danger" style="padding:5px 10px;" onclick="this.parentElement.remove()">X</button>
+        `;
+        container.appendChild(div);
+    };
+
+    window.changeVendorBank = function(sel) {
+        if(window.currentVendorBanks && window.currentVendorBanks[sel.value]) {
+            let b = window.currentVendorBanks[sel.value];
+            
+            // Masukkan Nombor Akaun
+            document.getElementById('pv-supp-bankac').value = b.bankAc;
+            document.getElementById('pv-supp-bankac').nextElementSibling.innerText = b.bankAc;
+            
+            // Gabungkan Nama Bank + Nama Pemegang Akaun
+            // Contoh output: "MAYBANK - SYARIKAT ALI SDN BHD"
+            let combinedName = b.bankName;
+            if (b.accName) combinedName += " - " + b.accName;
+            
+            document.getElementById('pv-supp-bankname').value = combinedName;
+            document.getElementById('pv-supp-bankname').nextElementSibling.innerText = combinedName;
+        }
+    };
+
+   window.initApp = function() {
+        let def = JSON.parse(localStorage.getItem('sys_companyDefaults')) || {};
+        
+        let logoEl = document.getElementById('doc-logo');
+        if(logoEl) { logoEl.src = def.logo || ''; logoEl.style.height = (def.logoHeight || 120) + 'px'; }
+        if(document.getElementById('doc-co-name')) document.getElementById('doc-co-name').innerText = def.name || 'COMPANY NAME';
+        if(document.getElementById('doc-co-addr')) document.getElementById('doc-co-addr').innerText = def.addr || '';
+        
+        let coTinEl = document.getElementById('doc-co-tin');
+        if(coTinEl) {
+            if (def.tin && def.tin.trim() !== "") { coTinEl.innerText = "TIN: " + def.tin; coTinEl.style.display = 'block'; } 
+            else { coTinEl.style.display = 'none'; }
+        }
+
+        toggleRightPanel('CLIENTS'); // Paksa senarai Supplier buka automatik
+        loadItemDatalist(); 
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const viewDoc = urlParams.get('view');
+        if(viewDoc) {
+            setTimeout(() => editDocument('PV', viewDoc), 300);
+        }
+    };
+
+   window.loadItemDatalist = function() {
+        let items = JSON.parse(localStorage.getItem('sys_db_items') || "[]");
+        let dl = document.getElementById('db-item-list');
+        if(dl) { dl.innerHTML = items.map(itm => `<option value="${itm.name}">`).join(''); }
+
+        // LOAD CARTA AKAUN KE DATALIST DENGAN FORMAT BARU
+        let accounts = JSON.parse(localStorage.getItem('sys_db_accounts') || "[]");
+        let acList = document.getElementById('db-ac-list');
+        if(acList) { 
+            // Kita gabungkan supaya dropdown papar "6016 - DONATION & INFAQ"
+            acList.innerHTML = accounts.map(ac => `<option value="${ac.acNo} - ${ac.acName}">`).join(''); 
+        }
+    };
+
+    window.autoFillPrice = function(inputEl) {
+        let items = JSON.parse(localStorage.getItem('sys_db_items') || "[]");
+        let val = inputEl.value.trim().toUpperCase();
+        let found = items.find(i => i.name.toUpperCase() === val);
+        if(found) {
+            let row = inputEl.closest('tr');
+            let priceInput = row.querySelector('.item-price');
+            if(priceInput && (parseFloat(priceInput.value) === 0 || priceInput.value === "")) { 
+                priceInput.value = found.price;
+            }
+        }
+    };
+
+    // FUNGSI AUTO FILL CHART OF ACCOUNTS UNTUK PV
+    window.autoFillAcName = function(inputEl) {
+        let accounts = JSON.parse(localStorage.getItem('sys_db_accounts') || "[]");
+        
+        // Asingkan nombor dan nama kalau user pilih dari dropdown
+        let val = inputEl.value.split('-')[0].trim(); 
+        
+        let found = accounts.find(ac => ac.acNo === val);
+        if(found) {
+            let row = inputEl.closest('tr');
+            let acNameInput = row.querySelector('.pv-acname');
+            
+            if(acNameInput) {
+                acNameInput.value = found.acName;
+                acNameInput.nextElementSibling.innerText = found.acName;
+            }
+            
+            // Kemaskan semula kotak A/C No supaya tinggal nombor sahaja
+            inputEl.value = found.acNo;
+            inputEl.nextElementSibling.innerText = found.acNo;
+        }
+    };
+
+    function autoResize(el) { if(el) { el.style.height = 'auto'; el.style.height = (el.scrollHeight + 5) + 'px'; } }
+    function setAndMirror(id, val) { const el = document.getElementById(id); if (el) { el.value = val; const mirror = document.getElementById(id + '-mirror'); if (mirror) { mirror.innerText = val; } } }
+    function formatDate(date) { let offset = date.getTimezoneOffset() * 60000; return new Date(date - offset).toISOString().slice(0,10); }
+
+    window.toggleRightPanel = function(mode) {
+        let btnClient = document.getElementById('btn-tab-clients');
+        let btnOrder = document.getElementById('btn-tab-orders');
+        let btnAllDocs = document.getElementById('btn-tab-alldocs'); // Butang baru
+        
+        let viewClient = document.getElementById('view-clients');
+        let viewOrder = document.getElementById('view-orders');
+        let viewAllDocs = document.getElementById('view-alldocs'); // View baru
+        
+        let search = document.getElementById('search-data');
+        let title = document.getElementById('right-panel-title');
+
+        // Reset semua butang
+        if(btnClient) { btnClient.className = 'btn btn-outline'; btnClient.style.border = 'none'; btnClient.style.background = 'transparent'; }
+        if(btnOrder) { btnOrder.className = 'btn btn-outline'; btnOrder.style.border = 'none'; btnOrder.style.background = 'transparent'; }
+        if(btnAllDocs) { btnAllDocs.className = 'btn btn-outline'; btnAllDocs.style.border = 'none'; btnAllDocs.style.background = 'transparent'; }
+
+        // Sorok semua view
+        if(viewClient) viewClient.style.display = 'none';
+        if(viewOrder) viewOrder.style.display = 'none';
+        if(viewAllDocs) viewAllDocs.style.display = 'none';
+
+        if(mode === 'CLIENTS') {
+            if(btnClient) { btnClient.className = 'btn btn-primary'; btnClient.style.background = 'var(--primary)'; }
+            if(viewClient) viewClient.style.display = 'block';
+            title.innerText = '🏭 Vendor Database';
+            search.placeholder = '🔍 Search vendors...';
+            search.onkeyup = function() { filterTableData(); };
+            loadCRM();
+        } else if (mode === 'ORDERS') {
+            if(btnOrder) { btnOrder.className = 'btn btn-primary'; btnOrder.style.background = 'var(--primary)'; }
+            if(viewOrder) viewOrder.style.display = 'block';
+            title.innerText = '📥 Master Purchase Orders';
+            search.placeholder = '🔍 Search PO no / vendor / project...';
+            search.onkeyup = function() { filterTableData(); };
+            loadCustomerOrders();
+        } else if (mode === 'ALLDOCS') {
+            if(btnAllDocs) { btnAllDocs.className = 'btn btn-primary'; btnAllDocs.style.background = 'var(--primary)'; }
+            if(viewAllDocs) viewAllDocs.style.display = 'block';
+            title.innerText = '📑 All Documents Masterlist';
+            search.placeholder = '🔍 Search Doc No / Vendor...';
+            search.onkeyup = function() { currentDocPage = 1; renderAllDocsTable(); };
+            loadAllDocuments();
+        }
+    };
+
+    window.filterTableData = function() {
+        let input = document.getElementById('search-data').value.toUpperCase(); 
+        let viewClient = document.getElementById('view-clients').style.display !== 'none';
+        let tableId = viewClient ? 'client-table' : 'order-table';
+        let tr = document.getElementById(tableId).getElementsByTagName('tr');
+        
+        for (let i = 1; i < tr.length; i++) {
+            let td = tr[i].getElementsByTagName('td');
+            let rowText = "";
+            for(let j=0; j<td.length; j++) { rowText += td[j].textContent || td[j].innerText; }
+            tr[i].style.display = rowText.toUpperCase().indexOf(input) > -1 ? "" : "none"; 
+        }
+    };
+
+    window.loadCustomerOrders = function() {
+        let pos = JSON.parse(localStorage.getItem('sys_poHistory') || "[]");
+        let bills = JSON.parse(localStorage.getItem('sys_billHistory') || "[]");
+        let tbody = document.getElementById('order-list-body'); let html = "";
+        
+        // 1. Dapatkan nilai Sorting dari Dropdown
+        let sortBy = document.getElementById('sort-order-by') ? document.getElementById('sort-order-by').value : 'DATE_DESC';
+
+        // 2. Logik Susunan
+        pos.sort((a,b) => {
+            let dateA = new Date(a.date).getTime(); 
+            let dateB = new Date(b.date).getTime();
+            let amtA = parseFloat(a.total) || 0;
+            let amtB = parseFloat(b.total) || 0;
+
+            if(sortBy === 'DATE_DESC') return dateB - dateA;
+            if(sortBy === 'DATE_ASC') return dateA - dateB;
+            if(sortBy === 'AMT_DESC') return amtB - amtA;
+            if(sortBy === 'AMT_ASC') return amtA - amtB;
+            return 0;
+        });
+        
+        // 3. Bina paparan jadual
+        pos.forEach(d => {
+            let amt = parseFloat(d.total) || 0;
+            let relatedBill = bills.find(b => (b.poNo && b.poNo.includes(d.id)) || (b.project && b.project.includes(d.id)));
+            let actions = "";
+            if(relatedBill) {
+                actions += `<button class="btn btn-success" style="padding:4px 8px; font-size:10px; background:#27ae60;" onclick="editDocument('BILL', '${relatedBill.id}')">📄 Open Bill</button>`;
+            } else {
+                actions += `<button class="btn btn-danger" style="padding:4px 8px; font-size:10px;" onclick="convertPipeline('PO', '${d.id}', 'BILL')">📥 Convert to Bill</button>`;
+            }
+            let statusBadge = relatedBill ? `<span style="color:#27ae60; font-weight:bold;">BILLED</span>` : `<span style="color:#f39c12; font-weight:bold;">PENDING</span>`;
+
+            // Tangkap nama supplier jika ia di dalam cName, custName, atau poSuppName
+            let suppName = d.cName || d.custName || d.poSuppName || "-";
+
+            html += `<tr>
+                <td>${d.date}</td>
+                <td><strong>${d.id}</strong><br><small>${statusBadge}</small></td>
+                <td><strong>${suppName}</strong><br><small style="color:#777;">${d.project || '-'}</small></td>
+                <td style="text-align:right; font-weight:bold;">${amt.toFixed(2)}</td>
+                <td style="text-align:center; white-space:nowrap;">${actions}</td>
+            </tr>`;
+        });
+        tbody.innerHTML = html === "" ? "<tr><td colspan='5' style='text-align:center; padding:30px; color:#999;'>No Purchase Orders found. Create a PO first.</td></tr>" : html;
+    };
+
+    window.loadAllDocuments = function() {
+        let pos = JSON.parse(localStorage.getItem('sys_poHistory') || "[]");
+        let bills = JSON.parse(localStorage.getItem('sys_billHistory') || "[]");
+        let pvs = JSON.parse(localStorage.getItem('sys_pvHistory') || "[]");
+        let cndns = JSON.parse(localStorage.getItem('sys_cnHistory') || "[]");
+
+        allDocsMasterData = [];
+        
+        pos.forEach(x => allDocsMasterData.push({ type: 'PO', no: x.id, date: x.date, client: x.custName || x.cName || x.poSuppName, amount: parseFloat(x.total)||0 }));
+        bills.forEach(x => allDocsMasterData.push({ type: 'BILL', no: x.id, date: x.date, client: x.custName || x.cName, amount: Math.max(0, (parseFloat(x.total)||0) - (parseFloat(x.discount)||0)) }));
+        pvs.forEach(x => allDocsMasterData.push({ type: 'PV', no: x.id, date: x.date, client: x.custName || x.cName, amount: parseFloat(x.total)||0 }));
+        cndns.forEach(x => allDocsMasterData.push({ type: x.type && x.type.includes('CREDIT') ? 'CN' : 'DN', no: x.id, date: x.date, client: x.custName || x.cName, amount: parseFloat(x.total)||0 }));
+
+        currentDocPage = 1;
+        renderAllDocsTable();
+    };
+
+    window.renderAllDocsTable = function() {
+        let filterType = document.getElementById('filter-doc-type').value;
+        let searchQ = document.getElementById('search-data').value.toUpperCase();
+        let sortBy = document.getElementById('sort-doc-by') ? document.getElementById('sort-doc-by').value : 'DATE_DESC';
+
+        let filtered = allDocsMasterData.filter(d => {
+            let matchType = (filterType === 'ALL') || (d.type === filterType) || (filterType === 'CNDN' && (d.type === 'CN' || d.type === 'DN'));
+            let matchSearch = (d.no.toUpperCase().includes(searchQ) || (d.client && d.client.toUpperCase().includes(searchQ)));
+            return matchType && matchSearch;
+        });
+
+        filtered.sort((a, b) => {
+            let dateA = new Date(a.date).getTime(); let dateB = new Date(b.date).getTime();
+            let numA = parseInt(a.no.replace(/\D/g, '')) || 0; let numB = parseInt(b.no.replace(/\D/g, '')) || 0;
+            if (sortBy === 'DATE_DESC') { if(dateB === dateA) return numB - numA; return dateB - dateA; } 
+            else if (sortBy === 'DATE_ASC') { if(dateA === dateB) return numA - numB; return dateA - dateB; } 
+            else if (sortBy === 'DOC_DESC') { if(numB === numA) return dateB - dateA; return numB - numA; } 
+            else if (sortBy === 'DOC_ASC') { if(numA === numB) return dateA - dateB; return numA - numB; }
+            return 0;
+        });
+
+        let totalPages = Math.ceil(filtered.length / docsPerPage) || 1;
+        if (currentDocPage > totalPages) currentDocPage = totalPages;
+        if (currentDocPage < 1) currentDocPage = 1;
+
+        document.getElementById('lbl-page-docs').innerText = currentDocPage;
+        document.getElementById('lbl-total-docs').innerText = totalPages;
+        document.getElementById('btn-prev-docs').disabled = currentDocPage === 1;
+        document.getElementById('btn-next-docs').disabled = currentDocPage === totalPages;
+
+        let startIdx = (currentDocPage - 1) * docsPerPage;
+        let pageData = filtered.slice(startIdx, startIdx + docsPerPage);
+
+        let tbody = document.getElementById('alldocs-list-body');
+        let html = "";
+        let colorMap = {'BILL':'#e74c3c', 'PO':'#8e44ad', 'PV':'#27ae60', 'CN':'#f39c12', 'DN':'#d35400'};
+
+        pageData.forEach(d => {
+            let badge = `<span style="background:${colorMap[d.type]||'#555'}; color:white; padding:2px 6px; border-radius:3px; font-size:9px; font-weight:bold;">${d.type}</span>`;
+            let actions = `<button class="btn btn-outline" style="padding:4px 8px; font-size:10px; margin-right:5px;" onclick="editDocument('${d.type}', '${d.no}')">📄 View</button>`;
+            actions += `<button class="btn btn-remove admin-only" style="padding:4px 8px; font-size:10px; margin-right:5px; background:#e74c3c; color:white; border:none;" onclick="deleteDocument('${d.type}', '${d.no}')">🗑️ Del</button>`;
+            
+            html += `<tr style="border-bottom:1px solid #eee;">
+                <td><strong>${d.no}</strong></td>
+                <td>${d.date}</td>
+                <td>${badge}</td>
+                <td style="max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${d.client || '<i style="color:#aaa;">- No Name -</i>'}</td>
+                <td style="text-align:right; font-weight:bold;">${d.amount > 0 ? d.amount.toFixed(2) : '-'}</td>
+                <td style="text-align:center; white-space:nowrap;">${actions}</td>
+            </tr>`;
+        });
+
+        tbody.innerHTML = html === "" ? "<tr><td colspan='6' style='text-align:center; padding:30px; color:#999;'>No documents found.</td></tr>" : html;
+    };
+
+    window.changePageDocs = function(dir) {
+        currentDocPage += dir;
+        renderAllDocsTable();
+    };
+
+   window.editClient = function(clientId, clientName) {
+        let clients = JSON.parse(localStorage.getItem('sys_db_suppliers') || "[]"); let c = clients.find(x => x.id === clientId || x.name === clientName);
+        if(!c) return;
+        document.getElementById('reg-id').value = c.id || c.name; 
+        document.getElementById('reg-code').value = c.code || '';
+        document.getElementById('reg-name').value = c.name; 
+        document.getElementById('reg-attn').value = c.attn || ''; 
+        document.getElementById('reg-phone').value = c.phone || ''; 
+        document.getElementById('reg-addr').value = c.addr || ''; 
+        document.getElementById('reg-terms').value = c.terms || '';
+        
+       // KOD BARU: Tarik senarai bank masuk ke borang
+        document.getElementById('vendor-bank-list').innerHTML = '';
+        if (c.bankAccounts && c.bankAccounts.length > 0) {
+            // Tambah b.accName
+            c.bankAccounts.forEach(b => addVendorBankRow(b.bankName, b.bankAc, b.accName || ''));
+        } else if (c.bankName || c.bankAc) { 
+            addVendorBankRow(c.bankName, c.bankAc, c.accName || ''); 
+        } else {
+            addVendorBankRow(); 
+        }
+
+        document.getElementById('form-title').innerHTML = "✏️ Edit Vendor Data"; let btnSave = document.getElementById('btn-save-client'); btnSave.innerHTML = "💾 Update Vendor"; btnSave.classList.replace('btn-primary', 'btn-warning'); document.getElementById('btn-cancel-edit').style.display = "block";
+    };
+
+    window.cancelEditClient = function() {
+        document.getElementById('reg-id').value = ""; 
+        document.getElementById('reg-code').value = ""; 
+        document.getElementById('reg-name').value = ""; 
+        document.getElementById('reg-attn').value = ""; 
+        document.getElementById('reg-phone').value = ""; 
+        document.getElementById('reg-addr').value = ""; 
+        document.getElementById('reg-terms').value = "";
+        
+        // KOD BARU: Reset bank list
+        document.getElementById('vendor-bank-list').innerHTML = '';
+        addVendorBankRow();
+
+        document.getElementById('form-title').innerHTML = "➕ Register Supplier"; let btnSave = document.getElementById('btn-save-client'); btnSave.innerHTML = "💾 Save Vendor"; btnSave.classList.replace('btn-warning', 'btn-primary'); document.getElementById('btn-cancel-edit').style.display = "none";
+    };
+
+    window.registerClient = function() {
+        let editId = document.getElementById('reg-id').value; 
+        let code = document.getElementById('reg-code').value.trim().toUpperCase();
+        let name = document.getElementById('reg-name').value.trim().toUpperCase(); 
+        let attn = document.getElementById('reg-attn').value.trim(); 
+        let phone = document.getElementById('reg-phone').value.trim(); 
+        let addr = document.getElementById('reg-addr').value.trim(); 
+        let terms = document.getElementById('reg-terms').value.trim();
+        let bankAccounts = [];
+        document.querySelectorAll('#vendor-bank-list .bank-entry').forEach(row => {
+            let bName = row.querySelector('.b-name').value.trim().toUpperCase();
+            let bAc = row.querySelector('.b-ac').value.trim();
+            let aName = row.querySelector('.a-name').value.trim().toUpperCase(); // Tangkap Account Holder Name
+            if(bName || bAc || aName) bankAccounts.push({ bankName: bName, bankAc: bAc, accName: aName });
+        });
+        
+        let bankName = bankAccounts.length > 0 ? bankAccounts[0].bankName : "";
+        let bankAc = bankAccounts.length > 0 ? bankAccounts[0].bankAc : "";
+        let accName = bankAccounts.length > 0 ? bankAccounts[0].accName : ""; // Ambil nama pemegang akaun utama
+        
+        if(!name) return alert("Vendor Name is required!"); 
+        let clients = JSON.parse(localStorage.getItem('sys_db_suppliers') || "[]");
+
+        if (!code) {
+            let lastCodeNum = clients.length + 1;
+            code = "V-" + lastCodeNum.toString().padStart(3, '0');
+        }
+
+        if (editId) { 
+            let idx = clients.findIndex(c => c.id === editId || c.name === editId); 
+            if(idx > -1) { 
+                let oldName = clients[idx].name;
+                clients[idx] = { id: editId, code: code, name: name, attn: attn, phone: phone, addr: addr, terms: terms, bankName: bankName, bankAc: bankAc, bankAccounts: bankAccounts, accName: accName }; 
+                
+                // --- CASCADE UPDATE A/P ---
+                if (oldName !== name) {
+                    let maps = ['sys_poHistory', 'sys_billHistory', 'sys_pvHistory', 'sys_cnHistory'];
+                    maps.forEach(key => {
+                        let docs = JSON.parse(localStorage.getItem(key) || "[]");
+                        let changed = false;
+                        docs = docs.map(d => {
+                            if(d.custName === oldName) { d.custName = name; changed = true; }
+                            if(d.cName === oldName) { d.cName = name; changed = true; }
+                            if(d.poSuppName === oldName) { d.poSuppName = name; changed = true; } // Khas untuk PO
+                            return d;
+                        });
+                        if(changed) localStorage.setItem(key, JSON.stringify(docs));
+                    });
+                }
+                
+                alert("Vendor Updated!"); 
+            } 
+        } else { 
+            if(clients.find(c => c.name === name || c.code === code)) return alert("Name or Code already exists!"); 
+            clients.push({ id: 'S-'+Date.now(), code: code, name: name, attn: attn, phone: phone, addr: addr, terms: terms, bankName: bankName, bankAc: bankAc, bankAccounts: bankAccounts, accName: accName }); 
+            alert("Vendor Saved!"); 
+        }
+        localStorage.setItem('sys_db_suppliers', JSON.stringify(clients)); cancelEditClient(); loadCRM(); 
+    };
+
+    window.deleteClient = function(clientId, clientName) {
+        if(confirm(`⚠️ Delete vendor profile for: ${clientName}?`)) {
+            let clients = JSON.parse(localStorage.getItem('sys_db_suppliers') || "[]");
+            clients = clients.filter(c => c.id !== clientId && c.name !== clientName);
+            localStorage.setItem('sys_db_suppliers', JSON.stringify(clients)); loadCRM();
+        }
+    };
+
+    window.loadCRM = function() {
+        let clients = JSON.parse(localStorage.getItem('sys_db_suppliers') || "[]");
+        let bills = JSON.parse(localStorage.getItem('sys_billHistory') || "[]");
+        let cndns = JSON.parse(localStorage.getItem('sys_cnHistory') || "[]"); 
+
+        // --- KOD BARU: AUTO-ASSIGN Vendor Code LAMA ---
+        let needsSave = false;
+        let highestNum = 0;
+        clients.forEach(c => {
+            if (c.code && c.code.startsWith('V-')) {
+                let num = parseInt(c.code.replace('V-', ''));
+                if (!isNaN(num) && num > highestNum) highestNum = num;
+            }
+        });
+        clients.forEach(c => {
+            if (!c.code || c.code.trim() === "") {
+                highestNum++;
+                c.code = "V-" + highestNum.toString().padStart(3, '0');
+                needsSave = true;
+            }
+        });
+        if (needsSave) localStorage.setItem('sys_db_suppliers', JSON.stringify(clients));
+        // ------------------------------------------------
+
+        // 1. Kumpul Data & Kira Outstanding Dahulu
+        let mappedClients = clients.map(c => {
+            let billTot = 0, paidTot = 0, cnTot = 0, dnTot = 0;
+            bills.forEach(inv => {
+                if(inv.custName === c.name || inv.cName === c.name) {
+                    billTot += Math.max(0, (parseFloat(inv.total)||0) - (parseFloat(inv.discount)||0));
+                    if(inv.payments) inv.payments.forEach(p => paidTot += parseFloat(p.amount)||0);
+                }
+            });
+            cndns.forEach(cn => {
+                if(cn.cName === c.name || cn.custName === c.name) {
+                    if(cn.id && cn.id.startsWith('CN-')) cnTot += parseFloat(cn.total)||0; 
+                    if(cn.id && cn.id.startsWith('DN-')) dnTot += parseFloat(cn.total)||0;
+                }
+            });
+            let outstanding = billTot - paidTot - cnTot - dnTot;
+            return { ...c, outstanding: outstanding };
+        });
+
+        // 2. Dapatkan nilai Sorting
+        let sortBy = document.getElementById('sort-client-by') ? document.getElementById('sort-client-by').value : 'NAME_ASC';
+
+        // 3. Susun (Sort)
+        mappedClients.sort((a,b) => {
+            if(sortBy === 'CODE_ASC') return (a.code || '').localeCompare(b.code || '');
+            if(sortBy === 'CODE_DESC') return (b.code || '').localeCompare(a.code || '');
+            if(sortBy === 'NAME_ASC') return (a.name || '').localeCompare(b.name || '');
+            if(sortBy === 'NAME_DESC') return (b.name || '').localeCompare(a.name || '');
+            if(sortBy === 'BAL_DESC') return b.outstanding - a.outstanding;
+            if(sortBy === 'BAL_ASC') return a.outstanding - b.outstanding;
+            return 0;
+        });
+
+        let tbody = document.getElementById('client-list-body'); let html = "";
+        
+        mappedClients.forEach(c => {
+            let outstanding = c.outstanding;
+            let outBadge = outstanding > 0 ? `<span style="color:#e74c3c; font-weight:800;">RM ${outstanding.toFixed(2)}</span>` : outstanding < 0 ? `<span style="color:#2980b9; font-weight:800;">OVERPAID: RM ${Math.abs(outstanding).toFixed(2)}</span>` : `<span style="color:#27ae60; font-weight:700;">RM 0.00</span>`;
+            
+            // KOD PENYELAMAT: Tukar simbol khas supaya HTML tak pecah
+            let safeName = c.name ? c.name.replace(/'/g, "\\'").replace(/"/g, "&quot;") : "";
+            let safeJSON = JSON.stringify(c).replace(/'/g, "&#39;").replace(/"/g, "&quot;");              
+            
+            html += `<tr>
+                <td><span style="background:#8e44ad; color:white; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:bold; margin-right:5px;">${c.code || 'NO-CODE'}</span> <strong>${c.name}</strong><br><small style="color:#777; margin-top:3px; display:inline-block;">${c.attn || '-'}</small></td>
+                <td>${c.phone || '-'}</td>
+                <td style="text-align:right;">${outBadge}</td>
+                <td style="text-align:center; white-space:nowrap;">
+                    <button class="btn btn-outline" style="padding:6px 10px; font-size:11px; margin-right:2px;" onclick='editClient("${c.id}", "${safeName}")'>✏️ Edit</button>
+                    <button class="btn btn-remove admin-only" style="padding:6px 10px; font-size:11px; margin-right:5px;" onclick='deleteClient("${c.id}", "${safeName}")'>🗑️ Del</button>
+                    <button class="btn btn-primary" style="padding:6px 12px; font-size:11px; background:#9b59b6;" onclick='openVault(${safeJSON})'>📂 Open Vault</button>
+                </td>
+            </tr>`;
+        });
+        tbody.innerHTML = html === "" ? "<tr><td colspan='4' style='text-align:center; padding:20px; color:#999;'>No vendors found. Register on the left.</td></tr>" : html;
+    };
+
+    window.deleteDocument = function(type, id) {
+        if(confirm(`⚠️ Padam dokumen ${id} secara KEKAL?\n\nAMARAN: Tindakan ini tidak boleh diundur.`)) {
+            let map = {'PO':'sys_poHistory', 'BILL':'sys_billHistory', 'PV':'sys_pvHistory', 'CN':'sys_cnHistory', 'DN':'sys_cnHistory'};
+            let hKey = map[type];
+            if(hKey) {
+                let history = JSON.parse(localStorage.getItem(hKey) || "[]");
+                let docToDelete = history.find(x => x.id === id);
+                if(!docToDelete) return;
+
+                // KAWALAN INTEGRITI: BILL (BIL PEMBEKAL)
+                if(type === 'BILL') {
+                    if (docToDelete.payments && docToDelete.payments.length > 0) {
+                        alert(`⛔ HALANGAN INTEGRITI: Bil ini telah dibayar.\n\nSila padam Payment Voucher (PV) yang berkaitan di dalam Masterlist / Vault terlebih dahulu sebelum memadam bil ini untuk mengelakkan ralat pada Cashbook.`);
+                        return; // Berhenti
+                    }
+                }
+
+                // PEMBERSIHAN DATA: PV (PAYMENT VOUCHER)
+                if(type === 'PV') {
+                    let ts = docToDelete.timestamp;
+                    
+                    // 1. Padam pengeluaran dari Cashbook
+                    let expenses = JSON.parse(localStorage.getItem('sys_expenses') || "[]");
+                    
+                    // Padam berdasarkan timestamp (untuk PV lama) ATAU ID PV (untuk Direct PV)
+                    expenses = expenses.filter(x => x.timestamp !== ts && x.supInv !== id);
+                    
+                    localStorage.setItem('sys_expenses', JSON.stringify(expenses));
+                    
+                    // 2. Tarik balik rekod bayaran dari dalam Bil asal
+                    let bills = JSON.parse(localStorage.getItem('sys_billHistory') || "[]");
+                    bills = bills.map(b => {
+                        if(b.payments) { 
+                            // Tapis bayaran yang direkod serentak dengan PV ini
+                            b.payments = b.payments.filter(p => Math.abs(p.timestamp - ts) > 2000); 
+                        }
+                        return b;
+                    });
+                    localStorage.setItem('sys_billHistory', JSON.stringify(bills));
+                    
+                    // 3. Padam Debit Note automatik (jika kes Overpayment)
+                    let cndns = JSON.parse(localStorage.getItem('sys_cnHistory') || "[]");
+                    cndns = cndns.filter(cn => cn.refInv !== id);
+                    localStorage.setItem('sys_cnHistory', JSON.stringify(cndns));
+                }
+
+                // Teruskan padam dokumen utama sasaran
+                history = history.filter(x => x.id !== id);
+                localStorage.setItem(hKey, JSON.stringify(history));
+                
+                alert(`${id} berjaya dipadam. Sistem telah diselaraskan.`);
+                
+                // Refresh semua jadual
+                if(typeof loadVaultHistory === 'function') loadVaultHistory();
+                if(typeof loadCustomerOrders === 'function') loadCustomerOrders();
+                if(typeof loadCRM === 'function') loadCRM(); 
+                if(typeof loadAllDocuments === 'function') loadAllDocuments();
+            }
+        }
+    };
+
+    window.openVault = function(clientObj) {
+        currentClient = clientObj; 
+        document.getElementById('crm-section').style.display = 'none'; 
+        document.getElementById('tab-aging').classList.remove('active'); 
+        document.getElementById('vault-section').style.display = 'block'; 
+        document.getElementById('v-client-name').innerText = clientObj.name; 
+        document.getElementById('v-client-info').innerText = `ATTN: ${clientObj.attn || '-'} | Tel: ${clientObj.phone || '-'} | Addr: ${clientObj.addr || '-'}`; 
+        document.getElementById('vault-filter').value = 'ALL';
+        loadVaultHistory();
+    };
+
+    window.closeVault = function() { 
+        currentClient = null; 
+        document.getElementById('vault-section').style.display = 'none'; 
+        document.getElementById('crm-section').style.display = 'flex'; 
+        let viewOrder = document.getElementById('view-orders').style.display !== 'none';
+        if(viewOrder) loadCustomerOrders(); else loadCRM(); 
+    };
+
+    window.filterVault = function() {
+        let filter = document.getElementById('vault-filter').value;
+        let rows = document.querySelectorAll('.vault-row');
+        rows.forEach(row => {
+            let type = row.getAttribute('data-doctype');
+            if (filter === 'ALL') { row.style.display = ''; } 
+            else if (filter === 'CNDN' && (type === 'CN' || type === 'DN')) { row.style.display = ''; } 
+            else if (type === filter) { row.style.display = ''; } 
+            else { row.style.display = 'none'; }
+        });
+    };
+
+    window.loadVaultHistory = function() {
+        if(!currentClient) return; let cName = currentClient.name; let allDocs = []; let totalOut = 0;
+        let bills = JSON.parse(localStorage.getItem('sys_billHistory') || "[]").filter(x => x.custName === cName || x.cName === cName);
+        let pos = JSON.parse(localStorage.getItem('sys_poHistory') || "[]").filter(x => x.cName === cName || x.custName === cName);
+        let pvs = JSON.parse(localStorage.getItem('sys_pvHistory') || "[]").filter(x => x.cName === cName || x.custName === cName);
+        let cndns = JSON.parse(localStorage.getItem('sys_cnHistory') || "[]").filter(x => x.cName === cName || x.custName === cName);
+
+        bills.forEach(x => { 
+            let tot = Math.max(0, (parseFloat(x.total)||0) - (parseFloat(x.discount)||0)); 
+            let pd = 0; if(x.payments) x.payments.forEach(p => pd += parseFloat(p.amount)||0); 
+            let bal = tot - pd; totalOut += Math.max(0, bal); 
+            let stat = bal <= 0 ? '<span style="color:#27ae60;font-weight:bold;">PAID</span>' : `<span style="color:#e74c3c;font-weight:bold;">OWE: RM${bal.toFixed(2)}</span>`; 
+            allDocs.push({ raw: x, type: 'BILL', date: x.date, no: x.id, ref: x.poNo || x.ref || '-', amount: tot, status: stat, timestamp: x.timestamp || 0 }); 
+        });
+        pos.forEach(x => { 
+            let relatedBill = bills.find(b => (b.poNo && b.poNo.includes(x.id)) || (b.project && b.project.includes(x.id)));
+            let stat = relatedBill ? '<span style="color:#27ae60;font-weight:bold;">Billed</span>' : 'Active PO';
+            allDocs.push({ raw: x, type: 'PO', date: x.date, no: x.id, ref: x.project || '-', amount: parseFloat(x.total)||0, status: stat, timestamp: x.timestamp || 0 }); 
+        });
+        pvs.forEach(x => { allDocs.push({ raw: x, type: 'PV', date: x.date, no: x.id, ref: x.refInv || '-', amount: parseFloat(x.total)||0, status: 'Voucher', timestamp: x.timestamp || 0 }); });
+        
+        cndns.forEach(x => { 
+            let typeCode = x.type && x.type.includes('CREDIT') ? 'CN' : 'DN';
+            allDocs.push({ raw: x, type: typeCode, date: x.date, no: x.id, ref: x.refInv || '-', amount: parseFloat(x.total)||0, status: 'Adjusted', timestamp: x.timestamp || 0 }); 
+        });
+
+        allDocs.sort((a,b) => new Date(b.date) - new Date(a.date));
+        document.getElementById('v-client-outstanding').innerText = totalOut.toFixed(2);
+
+        let tbody = document.getElementById('vault-history-body'); let html = "";
+        allDocs.forEach(d => {
+            let colorMap = {'BILL':'#e74c3c', 'PO':'#8e44ad', 'PV':'#27ae60', 'CN':'#f39c12', 'DN':'#d35400'};
+            let badge = `<span style="background:${colorMap[d.type]||'#555'}; color:white; padding:2px 6px; border-radius:3px; font-size:9px; font-weight:bold;">${d.type}</span>`;
+            
+            let actions = `<button class="btn btn-outline" style="padding:4px 8px; font-size:10px; margin-right:5px;" onclick="editDocument('${d.type}', '${d.no}')">📄 View/Edit</button>`;
+            actions += `<button class="btn btn-remove admin-only" style="padding:4px 8px; font-size:10px; margin-right:5px; background:#e74c3c; color:white; border:none;" onclick="deleteDocument('${d.type}', '${d.no}')">🗑️ Del</button>`;
+            
+            if(d.type === 'PO') { 
+                let relatedBill = bills.find(b => (b.poNo && b.poNo.includes(d.no)) || (b.project && b.project.includes(d.no)));
+                if(relatedBill) {
+                    actions += `<button class="btn btn-success" style="padding:4px 8px; font-size:10px; background:#27ae60;" onclick="editDocument('BILL', '${relatedBill.id}')">📄 Open Bill</button>`;
+                } else {
+                    actions += `<button class="btn btn-danger" style="padding:4px 8px; font-size:10px;" onclick="convertPipeline('${d.type}', '${d.no}', 'BILL')">➡️ Convert to Bill</button>`; 
+                }
+            } 
+
+            html += `<tr class="vault-row" data-doctype="${d.type}"><td style="font-size:11px;">${d.date}</td><td><strong>${d.no}</strong> ${badge}<br><small style="color:#777;">Ref: ${d.ref}</small></td><td style="font-size:11px; max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${d.raw.project || d.raw.desc || d.raw.payMethod || '-'}</td><td style="text-align:right; font-weight:bold;">${d.amount > 0 ? d.amount.toFixed(2) : '-'}</td><td style="text-align:center; font-size:11px;">${d.status}</td><td style="text-align:right; white-space:nowrap;">${actions}</td></tr>`;
+        });
+        tbody.innerHTML = html === "" ? "<tr><td colspan='6' style='text-align:center; padding:20px; color:#999;'>No history for this vendor.</td></tr>" : html;
+        filterVault();
+    };
+
+    window.openBulkPaymentModal = function() {
+        if(!currentClient) return;
+        document.getElementById('bp-client-name').innerText = currentClient.name; document.getElementById('bp-date').value = formatDate(new Date()); document.getElementById('bp-ref').value = "";
+        let bills = JSON.parse(localStorage.getItem('sys_billHistory') || "[]").filter(x => x.custName === currentClient.name || x.cName === currentClient.name);
+        bills.sort((a,b) => new Date(a.date) - new Date(b.date)); 
+        let tbody = ""; let hasDue = false;
+
+        bills.forEach(inv => {
+            let tot = Math.max(0, (parseFloat(inv.total)||0) - (parseFloat(inv.discount)||0)); let pd = 0; if(inv.payments) inv.payments.forEach(p => pd += parseFloat(p.amount)||0); let bal = tot - pd;
+            if(bal > 0) {
+                hasDue = true;
+                tbody += `<tr style="border-bottom:1px solid #eee;"><td style="text-align:center;"><input type="checkbox" class="bp-chk" onchange="toggleBPInv(this, ${bal})" data-id="${inv.id}"></td><td><strong>${inv.id}</strong><br><small>${inv.poNo || ''}</small></td><td style="text-align:right; color:#e74c3c;">${bal.toFixed(2)}</td><td style="text-align:right;"><input type="number" class="form-control bp-apply-input" style="width:100px; text-align:right; padding:5px; display:none;" data-id="${inv.id}" data-max="${bal}" step="0.01" value="0.00" oninput="calcBP()"></td></tr>`;
+            }
+        });
+        if(!hasDue) { tbody = `<tr><td colspan="4" style="text-align:center; padding:20px;">No outstanding bills to pay.</td></tr>`; document.getElementById('bp-applied-total').innerText = "0.00"; }
+        document.getElementById('bp-inv-list').innerHTML = tbody; document.getElementById('bulkPaymentModal').style.display = 'block'; calcBP(); 
+    };
+
+    window.toggleBPInv = function(chk, bal) {
+        let input = chk.closest('tr').querySelector('.bp-apply-input');
+        if(chk.checked) { input.style.display = 'inline-block'; input.value = bal.toFixed(2); } else { input.style.display = 'none'; input.value = "0.00"; }
+        calcBP();
+    };
+
+    window.calcBP = function() {
+        let total = 0;
+        document.querySelectorAll('.bp-chk:checked').forEach(chk => {
+            let input = chk.closest('tr').querySelector('.bp-apply-input'); 
+            let val = parseFloat(input.value) || 0;
+            total += val;
+        });
+        document.getElementById('bp-applied-total').innerText = total.toFixed(2);
+    };
+
+    window.processBulkPayment = function() {
+        let totalApplied = parseFloat(document.getElementById('bp-applied-total').innerText);
+        if(totalApplied <= 0) return alert("Please tick at least one bill to pay and enter the amount!");
+        
+        let date = document.getElementById('bp-date').value; let acc = document.getElementById('bp-acc').value; let ref = document.getElementById('bp-ref').value.toUpperCase();
+        let bills = JSON.parse(localStorage.getItem('sys_billHistory') || "[]"); 
+        let appliedDetails = [];
+        let dnDetails = []; 
+        let totalOverpayment = 0;
+
+        document.querySelectorAll('.bp-chk:checked').forEach(chk => {
+            let invId = chk.getAttribute('data-id'); 
+            let applyAmt = parseFloat(chk.closest('tr').querySelector('.bp-apply-input').value) || 0;
+            let maxAmt = parseFloat(chk.closest('tr').querySelector('.bp-apply-input').getAttribute('data-max')) || 0;
+
+            let invIdx = bills.findIndex(x => x.id === invId);
+            if(invIdx > -1 && applyAmt > 0) {
+                let actualPay = applyAmt;
+                let overpaid = 0;
+                
+                if(applyAmt > maxAmt) {
+                    actualPay = maxAmt; 
+                    overpaid = applyAmt - maxAmt; 
+                    totalOverpayment += overpaid;
+                    dnDetails.push({ invId: invId, amt: overpaid });
+                }
+
+                if(!bills[invIdx].payments) bills[invIdx].payments = [];
+                bills[invIdx].payments.push({ date: date, amount: actualPay, accType: acc, ref: ref, timestamp: Date.now() });
+                appliedDetails.push({ invId: invId, suppRef: bills[invIdx].poNo, amt: applyAmt });
+            }
+        });
+        localStorage.setItem('sys_billHistory', JSON.stringify(bills));
+
+        let ts = Date.now(); let expenses = JSON.parse(localStorage.getItem('sys_expenses') || "[]");
+        expenses.push({ 
+            date: date, category: "PURCHASES (A/P)", supInv: "PV", 
+            desc: `PAYMENT TO: ${currentClient.name} (${ref || 'NO REF'})`, 
+            amount: totalApplied, accType: acc, timestamp: ts, flow: 'OUT' 
+        });
+        localStorage.setItem('sys_expenses', JSON.stringify(expenses));
+
+        let pvHistory = JSON.parse(localStorage.getItem('sys_pvHistory') || "[]");
+        let lastPvNo = localStorage.getItem('sys_lastPvID') || "PV-1000"; let nextNum = (parseInt(lastPvNo.replace(/\D/g, '')) || 1000) + 1; let pvId = "PV-" + nextNum;
+        
+        // Sangkutkan Bank Account ke PV Items masa Auto-Generate Bulk Payment
+        let pvItems = appliedDetails.map(det => ({ 
+            desc: `PAYMENT FOR BILL ${det.invId}`, 
+            details: det.suppRef ? `Vendor Ref: ${det.suppRef}` : '', 
+            qty: 1, uom: 'SUM', price: det.amt,
+            acNo: currentClient.bankAc || '',
+            acName: currentClient.bankName || ''
+        }));
+
+        let pvData = { 
+            id: pvId, date: date, cName: currentClient.name, cAddr: currentClient.addr, 
+            refInv: appliedDetails.map(d => d.invId).join(', '), payMethod: acc, payRef: ref, 
+            total: totalApplied, timestamp: ts, items: pvItems,
+            bankAc: currentClient.bankAc || '', bankName: currentClient.bankName || ''
+        };
+        pvHistory.push(pvData); localStorage.setItem('sys_pvHistory', JSON.stringify(pvHistory)); localStorage.setItem('sys_lastPvID', pvId);
+        
+        document.getElementById('bulkPaymentModal').style.display = 'none';
+
+        window.forceSyncToFirebase();
+
+        if(totalOverpayment > 0) {
+            let cnHistory = JSON.parse(localStorage.getItem('sys_cnHistory') || "[]"); 
+            let lastCnNo = localStorage.getItem('sys_lastCnID') || "DN-1000"; 
+            let nextCnNum = (parseInt(lastCnNo.replace(/\D/g, '')) || 1000) + 1; 
+            let dnId = "DN-" + nextCnNum;
+
+            let dnItems = dnDetails.map(det => ({ 
+                desc: `OVERPAYMENT DEBIT FOR BILL ${det.invId}`, 
+                details: `Paid extra via ${pvId}`, 
+                qty: 1, uom: 'SUM', price: det.amt 
+            }));
+
+            let dnData = { 
+                id: dnId, date: date, cName: currentClient.name, cAddr: currentClient.addr, 
+                refInv: pvId, type: 'DEBIT NOTE', 
+                total: totalOverpayment, timestamp: ts + 100, items: dnItems 
+            };
+            cnHistory.push(dnData); 
+            localStorage.setItem('sys_cnHistory', JSON.stringify(cnHistory)); 
+            localStorage.setItem('sys_lastCnID', dnId); 
+
+            alert(`Payment Recorded!\nPayment Voucher (${pvId}) saved.\n\n⚠️ OVERPAYMENT DETECTED: RM ${totalOverpayment.toFixed(2)}\nDebit Note (${dnId}) has been automatically generated.`);
+            initDocument('PV', pvData);
+        } else {
+            alert("Payment Recorded to Cashbook!\nPayment Voucher (" + pvId + ") generated."); 
+            initDocument('PV', pvData); 
+        }
+    };
+
+    window.openAgeing = function() { document.getElementById('crm-section').style.display = 'none'; document.getElementById('vault-section').style.display = 'none'; document.getElementById('tab-aging').classList.add('active'); loadAgeingReport('summary'); };
+    window.closeAgeing = function() { document.getElementById('tab-aging').classList.remove('active'); document.getElementById('crm-section').style.display = 'flex'; };
+
+    window.loadAgeingReport = function(viewType = 'summary') {
+        let def = JSON.parse(localStorage.getItem('sys_companyDefaults')) || {}; document.getElementById('aging-co-name').innerText = def.name || "COMPANY NAME";
+        let agingLogo = document.getElementById('aging-logo'); if(agingLogo && def.logo) { agingLogo.src = def.logo; agingLogo.style.height = (def.logoHeight ? Math.min(def.logoHeight, 80) : 60) + 'px'; agingLogo.style.display = 'block'; } else if (agingLogo) { agingLogo.style.display = 'none'; }
+        let today = new Date(); document.getElementById('aging-as-at').innerText = today.toLocaleDateString('en-GB'); document.getElementById('aging-title').innerText = viewType === 'summary' ? "CREDITORS BALANCES AS AT " + today.toLocaleDateString('en-GB') : "CREDITORS AGEING AS AT " + today.toLocaleDateString('en-GB');
+
+        let monthCols = []; for(let i=0; i<6; i++) { let d = new Date(today.getFullYear(), today.getMonth() - i, 1); let mName = d.toLocaleString('en-US', { month: 'short' }); let yName = d.getFullYear().toString().substr(-2); monthCols.push({ label: `${mName}-${yName}`, m: d.getMonth(), y: d.getFullYear() }); }
+        let thead = `<tr>`; if(viewType === 'summary') { thead += `<th>No.</th><th>Vendor Name</th><th>Terms</th><th style="text-align:right;">Outstanding</th>`; } else { thead += `<th>Reference</th><th>Date</th><th>Vendor Name</th><th style="text-align:right;">Outstanding</th>`; }
+        monthCols.forEach(col => { thead += `<th style="text-align:right;">${col.label}</th>`; });
+        if(viewType === 'summary') { thead += `<th style="text-align:right;">< ${monthCols[5].label}</th><th class="no-print" style="text-align:center;">Action</th></tr>`; } else { thead += `<th style="text-align:right;">< ${monthCols[5].label}</th></tr>`; }
+        document.getElementById('aging-thead').innerHTML = thead;
+
+        let bills = JSON.parse(localStorage.getItem('sys_billHistory') || "[]"); let clients = JSON.parse(localStorage.getItem('sys_db_suppliers') || "[]");
+        let reportData = []; let grandTotals = { outstanding: 0, buckets: [0,0,0,0,0,0], older: 0 };
+
+        bills.forEach(inv => {
+            let invTot = Math.max(0, (parseFloat(inv.total)||0) - (parseFloat(inv.discount)||0)); let paid = 0; if(inv.payments) inv.payments.forEach(p => paid += parseFloat(p.amount)||0); let balance = invTot - paid;
+            if(balance > 0) {
+                let invDate = new Date(inv.date); let isValidDate = !isNaN(invDate.getTime()); let bucketIdx = -1;
+                if(isValidDate) { for(let i=0; i<6; i++) { if(invDate.getMonth() === monthCols[i].m && invDate.getFullYear() === monthCols[i].y) { bucketIdx = i; break; } } }
+                let clientObj = clients.find(c => c.name === inv.custName) || { terms: '30 Days' };
+                if(viewType === 'summary') {
+                    let existing = reportData.find(r => r.client === inv.custName); if(!existing) { existing = { client: inv.custName, terms: clientObj.terms, totalOut: 0, buckets: [0,0,0,0,0,0], older: 0 }; reportData.push(existing); }
+                    existing.totalOut += balance; if(bucketIdx > -1) existing.buckets[bucketIdx] += balance; else existing.older += balance;
+                } else {
+                    let row = { ref: inv.id, date: inv.date, client: inv.custName, terms: clientObj.terms, totalOut: balance, buckets: [0,0,0,0,0,0], older: 0 };
+                    if(bucketIdx > -1) row.buckets[bucketIdx] += balance; else row.older += balance; reportData.push(row);
+                }
+                grandTotals.outstanding += balance; if(bucketIdx > -1) grandTotals.buckets[bucketIdx] += balance; else grandTotals.older += balance;
+            }
+        });
+
+        if(viewType === 'summary') reportData.sort((a,b) => a.client.localeCompare(b.client)); else reportData.sort((a,b) => new Date(b.date) - new Date(a.date));
+
+        let tbody = "";
+        reportData.forEach((row, idx) => {
+            tbody += `<tr>`;
+            if(viewType === 'summary') { tbody += `<td>${idx+1}</td><td><strong>${row.client}</strong></td><td><span style="background:#fff3cd; padding:2px 5px; font-size:10px;">${row.terms}</span></td><td style="text-align:right; font-weight:bold;">${row.totalOut.toFixed(2)}</td>`; } 
+            else { let dObj = new Date(row.date); let niceDate = isNaN(dObj.getTime()) ? (row.date || '-') : dObj.toLocaleDateString('en-GB'); tbody += `<td><strong>${row.ref}</strong></td><td>${niceDate}</td><td>${row.client}</td><td style="text-align:right; font-weight:bold;">${row.totalOut.toFixed(2)}</td>`; }
+            row.buckets.forEach(amt => { tbody += `<td style="text-align:right;">${amt > 0 ? amt.toFixed(2) : '-'}</td>`; });
+            if(viewType === 'summary') { let safeName = row.client.replace(/'/g, "\\'"); tbody += `<td style="text-align:right; color:#e74c3c;">${row.older > 0 ? row.older.toFixed(2) : '-'}</td><td class="no-print" style="text-align:center;"><button class="btn btn-outline" style="padding:4px 8px; font-size:10px; background:#e0f7fa; border:1px solid #b2ebf2;" onclick="generateSOA('${safeName}')">📜 Print SOA</button></td></tr>`; } 
+            else { tbody += `<td style="text-align:right; color:#e74c3c;">${row.older > 0 ? row.older.toFixed(2) : '-'}</td></tr>`; }
+        });
+        if(reportData.length === 0) tbody = `<tr><td colspan="${viewType==='summary' ? 6 + monthCols.length : 5 + monthCols.length}" style="text-align:center; padding:20px;">No outstanding debts found.</td></tr>`;
+        document.getElementById('aging-tbody').innerHTML = tbody;
+
+        if(reportData.length > 0) {
+            let tfoot = `<tr><td colspan="${viewType==='summary'?3:3}" style="text-align:right;">GRAND TOTAL (RM) :</td><td style="text-align:right; color:#e74c3c;">${grandTotals.outstanding.toFixed(2)}</td>`;
+            grandTotals.buckets.forEach(amt => { tfoot += `<td style="text-align:right;">${amt > 0 ? amt.toFixed(2) : '-'}</td>`; });
+            if(viewType === 'summary') { tfoot += `<td style="text-align:right; color:#e74c3c;">${grandTotals.older > 0 ? grandTotals.older.toFixed(2) : '-'}</td><td class="no-print"></td></tr>`; } else { tfoot += `<td style="text-align:right; color:#e74c3c;">${grandTotals.older > 0 ? grandTotals.older.toFixed(2) : '-'}</td></tr>`; }
+            document.getElementById('aging-tfoot').innerHTML = tfoot;
+        } else { document.getElementById('aging-tfoot').innerHTML = ""; }
+    };
+
+    window.printAgeing = function() {
+        document.body.className = ''; document.body.classList.add('printing-aging');
+        let oriTitle = document.title; document.title = "CREDITORS_AGEING_REPORT";
+        setTimeout(() => { window.print(); document.title = oriTitle; document.body.className=''; }, 300);
+    };
+
+    window.generateSOA = function(clientName) {
+        document.getElementById('tab-aging').classList.remove('active'); document.getElementById('soa-section').style.display = 'block';
+        let def = JSON.parse(localStorage.getItem('sys_companyDefaults')) || {}; let clients = JSON.parse(localStorage.getItem('sys_db_suppliers') || "[]"); let clientObj = clients.find(c => c.name === clientName) || {};
+        document.getElementById('soa-co-name').innerText = def.name || "COMPANY NAME";
+        let soaLogo = document.getElementById('soa-logo'); if(soaLogo && def.logo) { soaLogo.src = def.logo; soaLogo.style.height = (def.logoHeight ? Math.min(def.logoHeight, 80) : 60) + 'px'; soaLogo.style.display = 'block'; } else if (soaLogo) { soaLogo.style.display = 'none'; }
+        document.getElementById('soa-co-addr').innerText = def.addr || ""; document.getElementById('soa-client-name').innerText = clientName;
+        let cAddr = ""; if (clientObj.addr) cAddr += clientObj.addr + "\n"; if (clientObj.phone) cAddr += "Tel: " + clientObj.phone; document.getElementById('soa-client-addr').innerText = cAddr;
+        document.getElementById('soa-date').innerText = new Date().toLocaleDateString('en-GB');
+
+        let bills = JSON.parse(localStorage.getItem('sys_billHistory') || "[]").filter(x => x.custName === clientName || x.cName === clientName);
+        let cndns = JSON.parse(localStorage.getItem('sys_cnHistory') || "[]").filter(x => x.cName === clientName || x.custName === clientName);
+        let transactions = [];
+
+        bills.forEach(inv => {
+            let invTot = Math.max(0, (parseFloat(inv.total)||0) - (parseFloat(inv.discount)||0)); transactions.push({ date: inv.date, type: 'SUPPLIER BILL', ref: inv.poNo || inv.id, credit: invTot, debit: 0 });
+            if(inv.payments) { inv.payments.forEach(p => { transactions.push({ date: p.date, type: 'PAYMENT', ref: p.ref || 'Paid', credit: 0, debit: parseFloat(p.amount) }); }); }
+        });
+        
+        cndns.forEach(cn => {
+            let cnTot = parseFloat(cn.total) || 0;
+            if(cn.type && cn.type.includes('CREDIT')) { transactions.push({ date: cn.date, type: 'CREDIT NOTE', ref: cn.id, credit: 0, debit: cnTot }); } 
+            else { transactions.push({ date: cn.date, type: 'DEBIT NOTE', ref: cn.id, credit: cnTot, debit: 0 }); }
+        });
+
+        transactions.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+        let tbody = ""; let runningBal = 0;
+        transactions.forEach(t => {
+            runningBal += (t.credit - t.debit); 
+            let tDateObj = new Date(t.date); let tDateStr = isNaN(tDateObj.getTime()) ? (t.date || '-') : tDateObj.toLocaleDateString('en-GB');
+            tbody += `<tr style="border-bottom: 1px solid #ccc;"><td style="border-right: 1px solid #000; border-left: 1px solid #000;">${tDateStr}</td><td style="border-right: 1px solid #000;"><strong>${t.type}</strong> ${t.ref ? '<br><small>'+t.ref+'</small>' : ''}</td><td style="border-right: 1px solid #000; text-align:right;">${t.credit > 0 ? t.credit.toFixed(2) : ''}</td><td style="border-right: 1px solid #000; text-align:right;">${t.debit > 0 ? t.debit.toFixed(2) : ''}</td><td style="border-right: 1px solid #000; text-align:right; font-weight:bold;">${runningBal.toFixed(2)}</td></tr>`;
+        });
+
+        if(transactions.length === 0) { tbody = `<tr><td colspan="5" style="text-align:center; padding:20px;">No transactions found.</td></tr>`; }
+        document.getElementById('soa-tbody').innerHTML = tbody;
+        document.getElementById('soa-terms').innerText = clientObj.terms ? `Credit Terms: ${clientObj.terms}.` : "Statement of Account.";
+    };
+
+    window.closeSOA = function() { document.getElementById('soa-section').style.display = 'none'; document.getElementById('tab-aging').classList.add('active'); };
+    window.printSOA = function() {
+        document.body.className = ''; document.body.classList.add('printing-soa');
+        let oriTitle = document.title; document.title = "SOA_" + document.getElementById('soa-client-name').innerText.replace(/\s+/g, '_');
+        
+        let cleanupPrint = function() {
+            document.title = oriTitle; 
+            document.body.className = ''; 
+            window.removeEventListener('focus', cleanupPrint);
+            window.removeEventListener('touchstart', cleanupPrint);
+            window.removeEventListener('click', cleanupPrint);
+        };
+
+        setTimeout(() => {
+            window.print(); 
+            setTimeout(() => {
+                window.addEventListener('focus', cleanupPrint);
+                window.addEventListener('touchstart', cleanupPrint);
+                window.addEventListener('click', cleanupPrint);
+            }, 1500);
+        }, 500);
+    };
+
+    window.initDocument = function(mode, loadData = null) {
+        activeDocMode = mode; editingDocId = loadData ? loadData.id : null;
+        
+        document.getElementById('crm-section').style.display = 'none'; 
+        document.getElementById('vault-section').style.display = 'none'; 
+        document.getElementById('tab-aging').classList.remove('active');
+        if(document.getElementById('soa-section')) document.getElementById('soa-section').style.display = 'none';
+        
+        document.getElementById('editor-section').style.display = 'block';
+        window.scrollTo(0, 0); 
+
+        let tDisplay = document.getElementById('doc-title-display'); 
+        let refLabel = document.getElementById('doc-ref-label'); 
+        let poSigns = document.getElementById('po-signature'); 
+        let pvSigns = document.getElementById('pv-signatures'); 
+        let thRate = document.getElementById('th-rate');
+        let thCalc = document.getElementById('th-calc');
+
+        // Reset semua display dahulu (kembali ke layout standard/PO)
+        document.querySelectorAll('.col-standard').forEach(el => el.style.display = 'table-cell'); 
+        let docTotalsBox = document.getElementById('doc-totals-box');
+        if(docTotalsBox) docTotalsBox.style.display = 'flex'; 
+        if(poSigns) poSigns.style.display = 'none'; 
+        let cndnSigns = document.getElementById('cndn-signatures');
+        if(cndnSigns) cndnSigns.style.display = 'none';
+
+        // KOD YANG AWAK TANYA TU LETAK DI SINI:
+        let cndnBankInfo = document.getElementById('cndn-bank-info'); 
+        if(cndnBankInfo) cndnBankInfo.style.display = 'none';
+        // ------------------------------------
+        
+        let extraRow = document.getElementById('row-top-extra');
+        let amtRow = document.getElementById('row-top-amount');
+        let discRow = document.getElementById('doc-discountRow');
+        let rmWords = document.getElementById('doc-rm-words');
+        let autoSign = document.getElementById('doc-auto-sign');
+        
+        if(rmWords) rmWords.style.display = 'none'; 
+        if(autoSign) autoSign.style.display = 'block'; 
+        if(extraRow) extraRow.style.display = 'table-row'; 
+        if(amtRow) amtRow.style.display = 'table-row'; 
+        if(discRow) discRow.style.display = 'table-row'; 
+        if(thRate) thRate.innerText = 'Unit Price';
+        
+        tDisplay.style.cursor = "default"; tDisplay.title = ""; tDisplay.onclick = null;
+
+        // Toggle CSS Classes untuk ubah bentuk borang
+        let isPV = (mode === 'PV');
+        document.querySelectorAll('.pv-only').forEach(el => {
+            if(!isPV) el.style.display = 'none';
+            else el.style.display = (el.tagName === 'TR') ? 'table-row' : ((el.tagName === 'TD' || el.tagName === 'TH') ? 'table-cell' : (el.id === 'pv-signatures' ? 'flex' : 'block'));
+        });
+        document.querySelectorAll('.non-pv').forEach(el => {
+            if(isPV) el.style.display = 'none';
+            else el.style.display = (el.tagName === 'TR') ? 'table-row' : ((el.tagName === 'TD' || el.tagName === 'TH') ? 'table-cell' : ''); 
+        });
+        
+        // // Betulkan paparan flex & block & table-footer
+        // if(isPV) {
+        //     document.querySelectorAll('.pv-only[style*="display: table-cell"]').forEach(el => {
+        //         if(el.tagName === 'TR' || el.tagName === 'DIV') el.style.display = (el.id === 'pv-signatures') ? 'flex' : (el.tagName === 'TR' ? 'table-row' : 'block');
+        //     });
+        // }
+
+        let pvTfoot = document.getElementById('pv-tfoot');
+        if(pvTfoot) pvTfoot.style.display = isPV ? 'table-footer-group' : 'none';
+
+        let addrBlock = document.getElementById('doc-middle-section');
+        let stdTable = document.getElementById('standard-doc-wrapper'); // Jadual standard
+        let stdTotals = document.getElementById('doc-totals-box');
+        // Cari label "Notes & Terms" yang berada tepat di atas kotak doc-terms
+        let notesLbl = document.getElementById('doc-terms') ? document.getElementById('doc-terms').previousElementSibling : null;
+        let terms = document.getElementById('doc-terms');
+        let termsMirror = document.getElementById('doc-terms-mirror');
+        let poExclusive = document.getElementById('po-exclusive-layout');
+
+
+        if (mode === 'PO') { 
+            tDisplay.innerText = "PURCHASE ORDER"; tDisplay.style.color = "#2c3e50"; 
+            refLabel.innerText = "PO # :"; 
+            if(thRate) thRate.innerText = "Unit Price";
+            if(thCalc) thCalc.innerText = "Total";
+            
+            // SOROK KESELURUHAN SUSUNAN STANDARD
+            if(addrBlock) addrBlock.style.display = 'none';
+            if(stdTable) stdTable.style.display = 'none';
+            if(stdTotals) stdTotals.style.display = 'none';
+            if(notesLbl) notesLbl.style.display = 'none'; 
+            if(terms) terms.style.display = 'none';
+            if(termsMirror) termsMirror.style.display = 'none';
+            if(autoSign) autoSign.style.display = 'none'; 
+            
+            
+            // --- KOD BARU: Sorok Terms & Amount di penjuru kanan atas ---
+            let docExtraRow = document.getElementById('row-top-extra');
+            if(docExtraRow) docExtraRow.style.display = 'none';
+            let docAmtRow = document.getElementById('row-top-amount');
+            if(docAmtRow) docAmtRow.style.display = 'none';
+            // ------------------------------------------------------------
+
+            // PAPARKAN SUSUNAN KHAS PO
+            poExclusive.style.display = 'block';
+
+            let def = JSON.parse(localStorage.getItem('sys_companyDefaults')) || {};
+            let coName = def.name || "Company Name";
+            document.getElementById('po-comp-1').innerText = coName;
+            document.getElementById('po-comp-2').innerText = coName;
+            document.getElementById('po-comp-3').innerText = coName;
+
+            if (!loadData) {
+                if(currentClient) {
+                    document.getElementById('po-supp-name').value = currentClient.name || '';
+                    document.getElementById('po-supp-name-m').innerText = currentClient.name || '';
+                    let sAddr = currentClient.addr || '';
+                    if(currentClient.phone) sAddr += "\nPhone: " + currentClient.phone;
+                    document.getElementById('po-supp-addr').value = sAddr;
+                    document.getElementById('po-supp-addr-m').innerText = sAddr;
+                }
+                document.getElementById('po-ship-name').value = coName;
+                document.getElementById('po-ship-name-m').innerText = coName;
+                let sShipAddr = def.addr || '';
+                if(def.phone) sShipAddr += "\nPhone: " + def.phone;
+                document.getElementById('po-ship-addr').value = sShipAddr;
+                document.getElementById('po-ship-addr-m').innerText = sShipAddr;
+
+                document.getElementById('po-services-body').innerHTML = '';
+                document.getElementById('po-materials-body').innerHTML = '';
+                addPoServiceRow(); addPoMaterialRow();
+            } else {
+                document.getElementById('po-supp-name').value = loadData.poSuppName || loadData.cName || '';
+                document.getElementById('po-supp-name-m').innerText = loadData.poSuppName || loadData.cName || '';
+                document.getElementById('po-supp-addr').value = loadData.poSuppAddr || loadData.cAddr || '';
+                document.getElementById('po-supp-addr-m').innerText = loadData.poSuppAddr || loadData.cAddr || '';
+                
+                document.getElementById('po-ship-name').value = loadData.poShipName || coName;
+                document.getElementById('po-ship-name-m').innerText = loadData.poShipName || coName;
+                document.getElementById('po-ship-addr').value = loadData.poShipAddr || '';
+                document.getElementById('po-ship-addr-m').innerText = loadData.poShipAddr || '';
+
+                if(loadData.poContactInfo) { document.getElementById('po-contact-info').value = loadData.poContactInfo; document.getElementById('po-contact-info-m').innerText = loadData.poContactInfo; }
+                if(loadData.poNotes) { document.getElementById('po-custom-notes').value = loadData.poNotes; document.getElementById('po-custom-notes-m').innerText = loadData.poNotes; }
+                if(loadData.poAckDays) document.getElementById('po-ack-days').value = loadData.poAckDays;
+
+                document.getElementById('po-services-body').innerHTML = '';
+                if(loadData.services && loadData.services.length > 0) loadData.services.forEach(s => addPoServiceRow(s.desc, s.days, s.price));
+                
+                document.getElementById('po-materials-body').innerHTML = '';
+                if(loadData.materials && loadData.materials.length > 0) {
+                    loadData.materials.forEach(m => addPoMaterialRow(m.desc, m.qty, m.price));
+                } else if (loadData.items) {
+                    loadData.items.forEach(item => addPoMaterialRow(item.desc, item.qty, item.price));
+                }
+            }
+            calcPoTotals();
+        } 
+        else if (mode === 'BILL' || mode === 'PV' || mode === 'CNDN') { 
+            // KEMBALIKAN SEMUA SUSUNAN STANDARD
+            if(addrBlock) addrBlock.style.display = 'flex';
+            if(stdTable) stdTable.style.display = 'block';
+            if(stdTotals) stdTotals.style.display = 'flex';
+            if(notesLbl) notesLbl.style.display = 'block';
+            if(terms) terms.style.display = 'block';
+            if(termsMirror) termsMirror.style.display = '';
+            if(poExclusive) poExclusive.style.display = 'none';
+
+            if (mode === 'BILL') { 
+            tDisplay.innerText = "VENDOR BILL RECORD"; 
+            tDisplay.style.color = "#e74c3c"; 
+            refLabel.innerText = "Record No :"; 
+            document.getElementById('doc-billto-label').innerText = "To Vendor:";
+            
+            // KOD PEMBAIKAN: Sembunyikan kolum PV-Only dan tunjukkan kolum Bill-AC
+            document.querySelectorAll('.pv-only').forEach(el => el.style.display = 'none');
+            document.querySelectorAll('.bill-ac').forEach(el => el.style.display = 'table-cell');
+            
+            if(autoSign) autoSign.style.display = 'block'; 
+        }
+            else if (mode === 'PV') { 
+                tDisplay.innerText = "PAYMENT VOUCHER";
+                tDisplay.style.color = "#27ae60"; 
+                refLabel.innerText = "No. PV :";
+                document.getElementById('doc-billto-label').innerText = "Pay To:";
+                let projL = document.getElementById('doc-proj-label'); if(projL) projL.innerText = "Payment Details:";
+
+                if(discRow) discRow.style.display = 'none';
+
+                // KOD PEMBAIKAN: Sorok Qty/UOM dan Tunjukkan A/C No/Name
+                document.querySelectorAll('.col-standard').forEach(el => el.style.display = 'none'); 
+                document.querySelectorAll('.bill-ac').forEach(el => el.style.display = 'table-cell');
+
+                if(thRate) thRate.innerText = 'Amount (MYR)';
+                if(autoSign) autoSign.style.display = 'none'; 
+            }
+            else if (mode === 'CNDN') { 
+                tDisplay.innerText = "DEBIT NOTE"; tDisplay.style.color = "#f39c12"; tDisplay.style.cursor = "pointer"; tDisplay.title = "Click to toggle Debit Note / Credit Note";
+                
+                refLabel.innerText = "Note No :"; 
+                let extraL = document.getElementById('doc-extra-label'); if(extraL) extraL.innerText = "Terms :"; 
+                
+                document.getElementById('doc-billto-label').innerText = "To Vendor:";
+                let projL = document.getElementById('doc-proj-label'); 
+                if(projL) projL.innerText = "Ref Bill & Reason:"; 
+                
+                if(thRate) thRate.innerText = "Unit Price";
+                if(thCalc) thCalc.innerText = "Amount";
+                if(discRow) discRow.style.display = 'none';
+                
+                if(autoSign) autoSign.style.display = 'none'; 
+                let cndnSigns = document.getElementById('cndn-signatures'); 
+                if(cndnSigns) cndnSigns.style.display = 'flex'; 
+
+                // Tunjuk Kotak Bank
+                let cndnBankInfo = document.getElementById('cndn-bank-info');
+                if (cndnBankInfo) cndnBankInfo.style.display = 'block';
+
+                // Fungsi Pintar Tukar Bank (Our Bank vs Supplier Bank)
+                window.setCndnBank = function(isDN) {
+                    if (isDN) {
+                        let def = JSON.parse(localStorage.getItem('sys_companyDefaults')) || {};
+                        let bName = def.bankName || def.bank || "";
+                        let bAc = def.bankAc || "";
+                        document.getElementById('cndn-bank-name').value = bName;
+                        document.getElementById('cndn-bank-name').nextElementSibling.innerText = bName;
+                        document.getElementById('cndn-bank-ac').value = bAc;
+                        document.getElementById('cndn-bank-ac').nextElementSibling.innerText = bAc;
+                    } else {
+                        let suppName = document.getElementById('doc-custName').value;
+                        let suppliers = JSON.parse(localStorage.getItem('sys_db_suppliers') || "[]");
+                        let supplier = suppliers.find(s => s.name === suppName) || {};
+                        document.getElementById('cndn-bank-name').value = supplier.bankName || "";
+                        document.getElementById('cndn-bank-name').nextElementSibling.innerText = supplier.bankName || "";
+                        document.getElementById('cndn-bank-ac').value = supplier.bankAc || "";
+                        document.getElementById('cndn-bank-ac').nextElementSibling.innerText = supplier.bankAc || "";
+                    }
+                };
+
+                // Tukar Tajuk & Isi Bank secara serentak bila diklik
+                tDisplay.onclick = function() { 
+                    if(this.innerText === "DEBIT NOTE") { 
+                        this.innerText = "CREDIT NOTE"; this.style.color = "#e74c3c"; 
+                        if(window.setCndnBank) window.setCndnBank(false); // Tukar ke Bank Supplier
+                    } else { 
+                        this.innerText = "DEBIT NOTE"; this.style.color = "#f39c12"; 
+                        if(window.setCndnBank) window.setCndnBank(true); // Tukar ke Bank Kita
+                    } 
+                };
+            }
+        }
+
+        document.getElementById('doc-items').innerHTML = '';
+        
+        if(!loadData) {
+            document.getElementById('doc-date').value = formatDate(new Date()); document.getElementById('doc-project').value = "";
+            let mapKey = mode==='PO' ? 'sys_lastPoID' : mode==='BILL' ? 'sys_lastBillID' : mode==='PV' ? 'sys_lastPvID' : 'sys_lastCnID'; 
+            let prefix = mode==='PO' ? 'PO-' : mode==='BILL' ? 'BIL-' : mode==='PV' ? 'PV-' : 'DN-';
+            let lastNo = localStorage.getItem(mapKey) || (prefix + "1000"); let num = parseInt(lastNo.replace(/\D/g, '')) || 1000;
+            document.getElementById('doc-no').value = prefix + (num + 1);
+            
+            let def = JSON.parse(localStorage.getItem('sys_companyDefaults')) || {}; let clientTerms = currentClient && currentClient.terms ? currentClient.terms : "30 Days";
+
+            // Masukkan Attn Automatik
+            let clientAttn = currentClient && currentClient.attn ? currentClient.attn : "";
+            document.getElementById('doc-attn').value = clientAttn;
+            document.getElementById('doc-attn').nextElementSibling.innerText = clientAttn;
+
+            // KOD PENYELAMAT: Tarik Nama & Alamat Supplier ke Borang Standard (Bill/PV/CNDN)
+            if (currentClient) {
+                document.getElementById('doc-custName').value = currentClient.name || "";
+                let sAddr = currentClient.addr || "";
+                if (currentClient.phone) sAddr += "\nTel: " + currentClient.phone;
+                setAndMirror('doc-custAddr', sAddr);
+            }
+
+            if(mode === 'PO') { document.getElementById('doc-extra-input').value = formatDate(new Date(Date.now() + 14*86400000)); setAndMirror('doc-terms', "1. Please send two copies of your bills.\n2. Enter this order in accordance with the prices, terms, delivery method, and specifications listed above."); addDocRow(); }
+            else if(mode === 'BILL') { document.getElementById('doc-extra-input').value = clientTerms; setAndMirror('doc-terms', ""); addDocRow(); }
+            else if(mode === 'PV') { 
+                document.getElementById('doc-extra-input').value = "TRANSFER"; setAndMirror('doc-terms', "Payment approved and processed."); 
+                addDocRow("", "", 1, 0, "Sum"); 
+                if(currentClient) {
+                    document.getElementById('pv-supp-bankac').value = currentClient.bankAc || "";
+                    document.getElementById('pv-supp-bankac').nextElementSibling.innerText = currentClient.bankAc || "";
+                    document.getElementById('pv-supp-bankname').value = currentClient.bankName || "";
+                    document.getElementById('pv-supp-bankname').nextElementSibling.innerText = currentClient.bankName || "";
+                }
+            }
+            else if (mode === 'CNDN') { 
+                document.getElementById('doc-extra-input').value = ""; setAndMirror('doc-terms', ""); addDocRow(); 
+                if(window.setCndnBank) window.setCndnBank(true); // Default tarik "Our Bank" bila mula
+            }
+            else { document.getElementById('doc-extra-input').value = ""; setAndMirror('doc-terms', ""); addDocRow(); }
+            
+        } else {
+            document.getElementById('doc-no').value = loadData.id; 
+            document.getElementById('doc-date').value = loadData.date; 
+            
+            // --- KOD PENYELAMAT: TARIK SEMULA DETAIL SYARIKAT & MAKLUMAT ---
+            let existingName = loadData.poSuppName || loadData.custName || loadData.cName || "";
+            document.getElementById('doc-custName').value = existingName;
+            
+            let existingAddr = loadData.poSuppAddr || loadData.custAddr || loadData.cAddr || "";
+            setAndMirror('doc-custAddr', existingAddr);
+            
+            let existingAttn = loadData.attn || "";
+            document.getElementById('doc-attn').value = existingAttn;
+            if(document.getElementById('doc-attn').nextElementSibling) document.getElementById('doc-attn').nextElementSibling.innerText = existingAttn;
+
+            if(document.getElementById('doc-discount')) document.getElementById('doc-discount').value = loadData.discount || loadData.disc || "0.00";
+            
+            if(mode === 'PV') { 
+                document.getElementById('doc-extra-input').value = loadData.payMethod || ""; 
+                setAndMirror('doc-project', `Ref Bill: ${loadData.refInv || '-'}\nCheque/Ref: ${loadData.payRef || '-'}`); 
+                setAndMirror('doc-terms', "Payment approved and processed."); 
+
+                let pulledBankAc = loadData.bankAc || "";
+                let pulledBankName = loadData.bankName || "";
+                
+                if (!pulledBankAc || !pulledBankName) {
+                    let clients = JSON.parse(localStorage.getItem('sys_db_suppliers') || "[]");
+                    let c = clients.find(x => x.name === (loadData.custName || loadData.cName));
+                    if(c) { pulledBankAc = c.bankAc || ""; pulledBankName = c.bankName || ""; }
+                }
+                document.getElementById('pv-supp-bankac').value = pulledBankAc;
+                document.getElementById('pv-supp-bankac').nextElementSibling.innerText = pulledBankAc;
+                document.getElementById('pv-supp-bankname').value = pulledBankName;
+                document.getElementById('pv-supp-bankname').nextElementSibling.innerText = pulledBankName;
+            } 
+            else { 
+                if (mode === 'CNDN') {
+                    document.getElementById('doc-extra-input').value = loadData.terms || ""; 
+                    let combinedReason = "";
+                    if(loadData.refInv) combinedReason += `Ref Bill: ${loadData.refInv}\n`;
+                    if(loadData.reason || loadData.project) combinedReason += `${loadData.reason || loadData.project}`;
+                    setAndMirror('doc-project', combinedReason);
+
+                    document.getElementById('cndn-bank-name').value = loadData.bankName || "";
+                    document.getElementById('cndn-bank-name').nextElementSibling.innerText = loadData.bankName || "";
+                    document.getElementById('cndn-bank-ac').value = loadData.bankAc || "";
+                    document.getElementById('cndn-bank-ac').nextElementSibling.innerText = loadData.bankAc || "";
+                } else {
+                    document.getElementById('doc-extra-input').value = (mode === 'BILL') ? (loadData.poNo || loadData.ref || "") : (loadData.ref || loadData.valid || ""); 
+                    setAndMirror('doc-project', loadData.project || loadData.reason || ""); 
+                }
+                setAndMirror('doc-terms', (mode === 'BILL') ? (loadData.notes || loadData.terms || "") : (loadData.terms || loadData.companyTerms || "")); 
+            }
+            
+            if(loadData.items) { loadData.items.forEach(itm => addDocRow(itm.desc, itm.details, itm.qty, itm.price, itm.uom, itm.acNo, itm.acName)); } else { addDocRow(); }
+            if(mode === 'CNDN' && loadData.type) { tDisplay.innerText = loadData.type; tDisplay.style.color = loadData.type.includes('CREDIT') ? '#e74c3c' : '#f39c12'; }
+        }
+       // --- KOD BARU: TARIK BANK INFO UNTUK BILL ---
+        let billBankInfo = document.getElementById('bill-bank-info');
+        if (billBankInfo) {
+            if (mode === 'BILL') {
+                // Pintar mencari nama: Sama ada dari Data Lama (View) atau Klien Semasa (Convert)
+                let suppName = (loadData ? (loadData.custName || loadData.cName || loadData.poSuppName) : null) || (currentClient ? currentClient.name : "") || document.getElementById('doc-custName').value;
+                
+                let suppliers = JSON.parse(localStorage.getItem('sys_db_suppliers') || "[]");
+                let supplier = suppliers.find(s => s.name === suppName);
+                
+                if (supplier && (supplier.bankName || supplier.bankAc)) {
+                    document.getElementById('bill-bank-name').innerText = supplier.bankName || "-";
+                    document.getElementById('bill-bank-ac').innerText = supplier.bankAc || "-";
+                    billBankInfo.style.display = 'block';
+                } else {
+                    billBankInfo.style.display = 'none';
+                }
+            } else {
+                billBankInfo.style.display = 'none';
+            }
+        }
+
+        // ==========================================================
+        // TAMPAL KOD LANGKAH 4 DI SINI (SEBELUM CALCUNIFIEDDOC)
+        // ==========================================================
+        if (mode === 'PV') {
+            let bankAccounts = [];
+            let suppliers = JSON.parse(localStorage.getItem('sys_db_suppliers') || "[]");
+            let suppName = document.getElementById('doc-custName').value; // Tarik nama vendor dari kotak borang
+            let c = suppliers.find(x => x.name === suppName);
+            
+            if (c && c.bankAccounts) bankAccounts = c.bankAccounts;
+
+            let bankSelCont = document.getElementById('pv-bank-selector-container');
+            let bankSel = document.getElementById('pv-bank-selector');
+            
+            if (bankSel && bankSelCont) {
+                if (bankAccounts.length > 1) { // Muncul kalau ada lebih 1 bank
+                    window.currentVendorBanks = bankAccounts;
+                   // Gantikan baris bankSel.innerHTML tu kepada ini:
+                    bankSel.innerHTML = bankAccounts.map((b, i) => {
+                        let display = `${b.bankName} - ${b.bankAc}`;
+                        if (b.accName) display += ` (${b.accName})`;
+                        return `<option value="${i}">${display}</option>`;
+                    }).join('');
+                    bankSelCont.style.display = 'block';
+                    
+                    // Jika edit PV lama, pastikan dropdown tunjuk bank yang betul
+                    if (loadData && loadData.bankAc) {
+                        let matchIdx = bankAccounts.findIndex(b => b.bankAc === loadData.bankAc);
+                        if (matchIdx > -1) bankSel.value = matchIdx;
+                    }
+                } else {
+                    bankSelCont.style.display = 'none';
+                }
+            }
+        }
+        // ==========================================================
+
+        calcUnifiedDoc(); setTimeout(() => document.querySelectorAll('textarea').forEach(el => autoResize(el)), 100);
+    };
+
+    window.addDocRow = function(desc="", details="", qty=1, price=0, uom="Sum", acNo="", acName="") {
+        let tr = document.createElement('tr'); tr.style.borderBottom = "1px solid #ccc"; 
+        let isPV = (activeDocMode === 'PV');
+        let dPv = isPV ? 'table-cell' : 'none';
+        let dNonPv = isPV ? 'none' : 'table-cell';
+        let safeDesc = desc ? desc.toString().replace(/"/g, '&quot;') : "";
+        let safeDetails = details ? details.toString().replace(/"/g, '&quot;') : "";
+        let displayAc = (activeDocMode === 'PV' || activeDocMode === 'BILL') ? 'table-cell' : 'none';
+
+        tr.innerHTML = `
+        <td class="pv-only bill-ac" style="vertical-align:top; padding:8px; border-right:1px solid #ccc; display:${displayAc}; width:15%;">
+            <input type="text" name="doc_acno" autocomplete="off" class="doc-input pv-acno" list="db-ac-list" style="width:100%; font-size:11px; text-transform:uppercase;" placeholder="A/C No" value="${acNo}" onchange="autoFillAcName(this)" oninput="this.nextElementSibling.innerText=this.value">
+            <div class="print-mirror" style="font-size:11px; font-weight:bold; white-space:pre-wrap;">${acNo}</div>
+        </td>
+        <td class="pv-only bill-ac" style="vertical-align:top; padding:8px; border-right:1px solid #ccc; display:${displayAc}; width:20%;">
+            <input type="text" name="doc_acname" autocomplete="off" class="doc-input pv-acname" style="width:100%; font-size:11px; text-transform:uppercase;" placeholder="A/C Name" value="${acName}" oninput="this.nextElementSibling.innerText=this.value">
+            <div class="print-mirror" style="font-size:11px; white-space:pre-wrap;">${acName}</div>
+        </td>
+        <td style="vertical-align:top; padding:8px; border-right:1px solid #ccc;">
+            <input type="text" name="doc_desc" autocomplete="off" class="doc-input item-desc" style="width:100%; font-weight:bold; text-transform:uppercase; font-size:12px; margin-bottom:2px;" placeholder="Description" value="${safeDesc}" onchange="calcUnifiedDoc();" oninput="this.nextElementSibling.nextElementSibling.innerText=this.value;">
+            <textarea name="doc_details" autocomplete="off" class="doc-textarea item-details non-pv" style="font-size:11px; color:#555; display:${dNonPv}; width:100%;" placeholder="Info..." oninput="this.nextElementSibling.nextElementSibling.innerText=this.value; autoResize(this);" rows="1">${safeDetails}</textarea>
+            <div class="print-mirror desc-m" style="display:none; font-weight:bold; font-size:12px; text-transform:uppercase;">${safeDesc}</div>
+            <div class="print-mirror det-m non-pv" style="display:none; font-size:11px; color:#444; white-space:pre-wrap;">${safeDetails}</div>
+        </td>
+        <td class="non-pv" style="vertical-align:top; padding:8px; border-right:1px solid #ccc; display:${dNonPv};"><input type="number" name="doc_qty" autocomplete="off" class="doc-input item-qty" style="width:100%; text-align:center;" value="${qty}" oninput="calcUnifiedDoc()"></td>
+        <td class="non-pv" style="vertical-align:top; padding:8px; border-right:1px solid #ccc; display:${dNonPv};"><input type="text" name="doc_uom" autocomplete="off" class="doc-input item-uom" style="width:100%; text-align:center; font-size:11px;" value="${uom}" onchange="this.setAttribute('value', this.value)"></td>
+        <td style="vertical-align:top; padding:8px; border-right:1px solid #ccc;"><input type="number" name="doc_price" autocomplete="off" class="doc-input item-price" style="width:100%; text-align:right;" value="${price}" step="0.01" oninput="calcUnifiedDoc()"></td>
+        <td class="non-pv row-total col-calc" style="vertical-align:top; padding:8px; text-align:right; font-weight:bold; display:${dNonPv};">0.00</td>
+        <td class="no-print" style="vertical-align:top; padding:8px;"><button class="btn btn-remove" style="padding:2px 6px;" onclick="this.closest('tr').remove(); calcUnifiedDoc()">X</button></td>
+        `;
+        document.getElementById('doc-items').appendChild(tr); 
+        calcUnifiedDoc();
+    };
+
+    window.calcUnifiedDoc = function() {
+        let subtotal = 0;
+        let isPV = (activeDocMode === 'PV');
+
+        document.querySelectorAll('#doc-items tr').forEach(row => {
+            let q = isPV ? 1 : (parseFloat(row.querySelector('.item-qty').value) || 0); 
+            let p = parseFloat(row.querySelector('.item-price').value) || 0; 
+            let tot = q * p;
+            if(row.querySelector('.row-total')) row.querySelector('.row-total').innerText = tot.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}); 
+            subtotal += tot;
+        });
+        
+        let disc = parseFloat(document.getElementById('doc-discount').value) || 0; 
+        let total = Math.max(0, subtotal - disc);
+        
+        let subStr = subtotal.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+        let totStr = total.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+        
+        document.getElementById('doc-subtotal').innerText = subStr; 
+        document.getElementById('doc-total').innerText = totStr; 
+        document.getElementById('doc-top-amount').innerText = totStr;
+
+        let pvTotEl = document.getElementById('pv-total-text');
+        if(pvTotEl) { pvTotEl.innerText = totStr; }
+    };
+    
+    window.closeEditor = function() { 
+        document.getElementById('editor-section').style.display = 'none'; 
+        activeDocMode = null; 
+        editingDocId = null; 
+        
+        if(currentClient) {
+            document.getElementById('vault-section').style.display = 'block'; 
+            loadVaultHistory(); 
+        } else {
+            document.getElementById('crm-section').style.display = 'flex'; 
+            let viewOrder = document.getElementById('view-orders').style.display !== 'none';
+            if(viewOrder) loadCustomerOrders(); else loadCRM();
+        }
+    };
+
+    window.saveUnifiedDoc = async function() {
+        let id = document.getElementById('doc-no').value.trim(); if(!id) return alert("Document Number is required!");
+        let isPO = (activeDocMode === 'PO');
+        let items = [];
+        
+        if (!isPO) {
+            // Validasi untuk jadual standard (Bil & PV)
+            items = Array.from(document.querySelectorAll('#doc-items tr')).filter(r => r.querySelector('.item-desc').value.trim() !== "").map(r => ({ 
+                desc: r.querySelector('.item-desc').value.trim().toUpperCase(), 
+                details: r.querySelector('.item-details').value.trim(), 
+                qty: r.querySelector('.item-qty') ? r.querySelector('.item-qty').value : 1, 
+                uom: r.querySelector('.item-uom') ? r.querySelector('.item-uom').value.toUpperCase() : '', 
+                price: r.querySelector('.item-price').value,
+                acNo: r.querySelector('.pv-acno') ? r.querySelector('.pv-acno').value : '',
+                acName: r.querySelector('.pv-acname') ? r.querySelector('.pv-acname').value : ''
+            }));
+            if(items.length === 0) return alert("Please add at least one item!");
+        } else {
+            // Validasi khas untuk Purchase Order (PO)
+            let svcCount = Array.from(document.querySelectorAll('#po-services-body tr')).filter(r => r.querySelector('.po-svc-desc').value.trim() !== "").length;
+            let matCount = Array.from(document.querySelectorAll('#po-materials-body tr')).filter(r => r.querySelector('.po-mat-desc').value.trim() !== "").length;
+            if(svcCount === 0 && matCount === 0) return alert("Sila masukkan sekurang-kurangnya satu item di bahagian Services atau Materials!");
+        }
+        let baseData = { id: id, date: document.getElementById('doc-date').value, custName: document.getElementById('doc-custName').value, custAddr: document.getElementById('doc-custAddr').value, attn: document.getElementById('doc-attn').value, project: document.getElementById('doc-project').value, terms: document.getElementById('doc-terms').value, notes: document.getElementById('doc-terms').value, items: items, timestamp: editingDocId ? (Date.now() - 1000) : Date.now() };
+
+        let hKey = ''; let dbKey = '';
+        if (activeDocMode === 'PO') { 
+            baseData.poSuppName = document.getElementById('po-supp-name').value;
+            baseData.poSuppAddr = document.getElementById('po-supp-addr').value;
+            baseData.poShipName = document.getElementById('po-ship-name').value;
+            baseData.poShipAddr = document.getElementById('po-ship-addr').value;
+            
+            let svcs = [];
+            document.querySelectorAll('#po-services-body tr').forEach(tr => {
+                svcs.push({ desc: tr.querySelector('.po-svc-desc').value, days: tr.querySelector('.po-svc-days').value, price: tr.querySelector('.po-svc-price').value });
+            });
+            baseData.services = svcs;
+
+            let mats = [];
+            document.querySelectorAll('#po-materials-body tr').forEach(tr => {
+                mats.push({ desc: tr.querySelector('.po-mat-desc').value, qty: tr.querySelector('.po-mat-qty').value, price: tr.querySelector('.po-mat-price').value });
+            });
+            baseData.materials = mats;
+
+            baseData.poContactInfo = document.getElementById('po-contact-info').value;
+            baseData.poNotes = document.getElementById('po-custom-notes').value;
+            baseData.poAckDays = document.getElementById('po-ack-days').value;
+            
+            baseData.total = document.getElementById('po-grand-total').innerText.replace(/,/g,'');
+            baseData.cName = baseData.poSuppName;
+            baseData.cAddr = baseData.poSuppAddr;
+
+            hKey = 'sys_poHistory'; dbKey = 'sys_lastPoID'; 
+        }
+        else if (activeDocMode === 'BILL') { baseData.poNo = document.getElementById('doc-extra-input').value; baseData.discount = document.getElementById('doc-discount').value; baseData.total = document.getElementById('doc-subtotal').innerText.replace(/,/g,''); let existInv = JSON.parse(localStorage.getItem('sys_billHistory')||"[]").find(x=>x.id===id); baseData.payments = existInv ? existInv.payments : []; hKey = 'sys_billHistory'; dbKey = 'sys_lastBillID'; } 
+        else if (activeDocMode === 'PV') { 
+            baseData.payMethod = document.getElementById('doc-extra-input').value; 
+            baseData.total = document.getElementById('doc-subtotal').innerText.replace(/,/g,''); 
+            baseData.cName = document.getElementById('doc-custName').value; 
+            let existPv = JSON.parse(localStorage.getItem('sys_pvHistory')||"[]").find(x=>x.id===id); 
+            
+            // Tangkap maklumat jika ia Direct PV
+            baseData.refInv = existPv ? existPv.refInv : "DIRECT"; 
+            baseData.payRef = existPv ? existPv.payRef : document.getElementById('doc-project').value; 
+            baseData.bankAc = document.getElementById('pv-supp-bankac').value;
+            baseData.bankName = document.getElementById('pv-supp-bankname').value;
+            hKey = 'sys_pvHistory'; dbKey = 'sys_lastPvID'; 
+
+           // --- KOD BARU: TOLAK DUIT & UPDATE CASHBOOK SECARA AUTOMATIK ---
+        let expenses = JSON.parse(localStorage.getItem('sys_expenses') || "[]");
+        let payDetails = document.getElementById('doc-project').value || 'NO REF';
+        
+        // SISTEM PINTAR: Tangkap kod akaun dari baris pertama jadual
+        let chosenCategory = (items.length > 0 && items[0].acNo) ? (items[0].acNo + " - " + items[0].acName) : "DIRECT PAY (A/P)";
+
+        if (!existPv) { 
+            // Jika PV Baru
+            expenses.push({
+                date: baseData.date, 
+                category: chosenCategory, // <--- Masukkan kod akaun yang dipilih
+                supInv: id, 
+                desc: `DIRECT PAY TO: ${baseData.cName} - ${payDetails}`,
+                amount: parseFloat(baseData.total),
+                accType: "BANK", 
+                timestamp: baseData.timestamp, 
+                flow: 'OUT'
+            });
+        } else {
+            // Jika PV di-edit, KEMASKINI terus di Cashbook!
+            let expIdx = expenses.findIndex(x => x.supInv === id);
+            if (expIdx > -1) {
+                expenses[expIdx].date = baseData.date;
+                expenses[expIdx].category = chosenCategory; // <--- Kemaskini kategori juga
+                expenses[expIdx].desc = `DIRECT PAY TO: ${baseData.cName} - ${payDetails}`;
+                expenses[expIdx].amount = parseFloat(baseData.total);
+            }
+        }
+        localStorage.setItem('sys_expenses', JSON.stringify(expenses));
+        // ---------------------------------------------------------------
+        }
+        else if (activeDocMode === 'CNDN') { 
+            let rawProj = document.getElementById('doc-project').value;
+            let extractedRef = "";
+            let match = rawProj.match(/Ref Bill:\s*([A-Za-z0-9\-]+)/i);
+            if(match && match[1]) extractedRef = match[1].trim();
+
+            baseData.refInv = extractedRef; 
+            baseData.reason = rawProj; 
+            baseData.total = document.getElementById('doc-subtotal').innerText.replace(/,/g,''); 
+            baseData.cName = document.getElementById('doc-custName').value; 
+            baseData.type = document.getElementById('doc-title-display').innerText; 
+            baseData.bankName = document.getElementById('cndn-bank-name').value; // Save Bank Name
+            baseData.bankAc = document.getElementById('cndn-bank-ac').value;     // Save Bank Ac
+            hKey = 'sys_cnHistory'; dbKey = 'sys_lastCnID'; 
+        }
+
+        let history = JSON.parse(localStorage.getItem(hKey) || "[]"); let idx = history.findIndex(x => x.id === id);
+        if(idx >= 0) history[idx] = baseData; else { history.push(baseData); localStorage.setItem(dbKey, id); }
+        localStorage.setItem(hKey, JSON.stringify(history)); 
+        alert(id + " successfully saved!"); 
+        closeEditor(); 
+    };
+
+    window.editDocument = function(type, id) { let map = {'PO':'sys_poHistory', 'BILL':'sys_billHistory', 'PV':'sys_pvHistory', 'CN':'sys_cnHistory', 'DN':'sys_cnHistory'}; let h = JSON.parse(localStorage.getItem(map[type]) || "[]"); let data = h.find(x => x.id === id); if(data) initDocument(type === 'CN' || type === 'DN' ? 'CNDN' : type, data); };
+
+    window.convertPipeline = function(sourceType, sourceId, targetType) {
+        if(!confirm(`Convert this ${sourceType} into a new ${targetType}?`)) return;
+        let map = {'PO':'sys_poHistory'}; let h = JSON.parse(localStorage.getItem(map[sourceType]) || "[]"); let srcData = h.find(x => x.id === sourceId); if(!srcData) return;
+        
+        let clientName = srcData.custName || srcData.cName;
+        let clients = JSON.parse(localStorage.getItem('sys_db_suppliers') || "[]");
+        let foundClient = clients.find(c => c.name === clientName);
+        if(foundClient) {
+            currentClient = foundClient;
+            document.getElementById('v-client-name').innerText = foundClient.name;
+            document.getElementById('v-client-info').innerText = `ATTN: ${foundClient.attn || '-'} | Tel: ${foundClient.phone || '-'} | Addr: ${foundClient.addr || '-'}`;
+        }
+
+        initDocument(targetType, null); 
+        document.getElementById('doc-custName').value = clientName || srcData.poSuppName || ""; 
+        setAndMirror('doc-custAddr', srcData.poSuppAddr || srcData.custAddr || srcData.cAddr || "");
+        
+        
+        if(targetType === 'BILL') { 
+            // 1. Tarik PO Number masuk ke dalam kotak Doc No / PO No (doc-extra-input)
+            document.getElementById('doc-extra-input').value = sourceId; 
+
+            // 2. Tarik Notes dari PO lama masuk ke ruangan keterangan
+            let combinedProj = "";
+            let projDesc = srcData.poNotes || srcData.project || "";
+            if (projDesc) combinedProj += projDesc;
+            setAndMirror('doc-project', combinedProj.trim()); 
+            
+            // 3. Tarik Default Credit Terms dari profil Supplier
+            let clientTerms = foundClient && foundClient.terms ? foundClient.terms : "30 Days";
+            setAndMirror('doc-terms', `Credit Terms: ${clientTerms}`);
+        }
+        
+        document.getElementById('doc-items').innerHTML = ""; 
+        // 1. Tarik standard items kalau ada
+        if(srcData.items && srcData.items.length > 0) { 
+            srcData.items.forEach(itm => addDocRow(itm.desc, itm.details, itm.qty, itm.price, itm.uom)); 
+        }
+        // 2. Tarik data dari Services (Khas untuk PO)
+        if(srcData.services && srcData.services.length > 0) {
+            srcData.services.forEach(svc => addDocRow(svc.desc, "Services", svc.days, svc.price, "Days"));
+        }
+        // 3. Tarik data dari Materials (Khas untuk PO)
+        if(srcData.materials && srcData.materials.length > 0) {
+            srcData.materials.forEach(mat => addDocRow(mat.desc, "Materials", mat.qty, mat.price, "Unit"));
+        }
+        // 4. Kalau kosong juga, sediakan satu row baru
+        if(document.getElementById('doc-items').innerHTML === "") {
+            addDocRow();
+        }
+        if(srcData.discount && document.getElementById('doc-discount')) document.getElementById('doc-discount').value = srcData.discount || srcData.disc; calcUnifiedDoc(); alert(`Successfully mapped from ${sourceId}. Please check the details and click SAVE.`);
+    };
+
+    window.addEventListener("beforeprint", () => { 
+        // 1. Format Tarikh
+        document.querySelectorAll('input[type="date"]').forEach(el => { 
+            if (el.value) { 
+                el.setAttribute('data-origval', el.value); 
+                let p = el.value.split('-'); 
+                if (p.length === 3) { el.type = 'text'; el.value = `${p[2]}/${p[1]}/${p[0]}`; el.style.textAlign = 'right'; } 
+            } 
+        }); 
+        
+        // 2. Sorok Jadual PO yang Kosong
+        if(activeDocMode === 'PO') {
+            let hasSvc = Array.from(document.querySelectorAll('#po-services-body .po-svc-desc')).some(i => i.value.trim() !== '');
+            let hasMat = Array.from(document.querySelectorAll('#po-materials-body .po-mat-desc')).some(i => i.value.trim() !== '');
+
+            let tSvc = document.getElementById('po-services-body');
+            if(!hasSvc && tSvc) {
+                let tbl = tSvc.closest('table');
+                tbl.style.display = 'none';
+                tbl.previousElementSibling.style.display = 'none'; // Sorok tajuk
+                tbl.nextElementSibling.style.display = 'none'; // Sorok subtotal
+            }
+            
+            let tMat = document.getElementById('po-materials-body');
+            if(!hasMat && tMat) {
+                let tbl = tMat.closest('table');
+                tbl.style.display = 'none';
+                tbl.previousElementSibling.style.display = 'none'; // Sorok tajuk
+                tbl.nextElementSibling.style.display = 'none'; // Sorok subtotal
+            }
+        }
+    });
+
+    window.addEventListener("afterprint", () => { 
+        // 1. Kembalikan Format Tarikh
+        document.querySelectorAll('input[data-origval]').forEach(el => { 
+            el.type = 'date'; el.value = el.getAttribute('data-origval'); el.removeAttribute('data-origval'); 
+        }); 
+        
+        // 2. Kembalikan Jadual PO seperti asal di skrin
+        if(activeDocMode === 'PO') {
+            let tSvc = document.getElementById('po-services-body');
+            if(tSvc) {
+                let tbl = tSvc.closest('table');
+                tbl.style.display = '';
+                tbl.previousElementSibling.style.display = '';
+                tbl.nextElementSibling.style.display = 'flex';
+            }
+            let tMat = document.getElementById('po-materials-body');
+            if(tMat) {
+                let tbl = tMat.closest('table');
+                tbl.style.display = '';
+                tbl.previousElementSibling.style.display = '';
+                tbl.nextElementSibling.style.display = 'flex';
+            }
+        }
+    });
+    
+    window.printUnifiedDoc = function() {
+        calcUnifiedDoc(); 
+        document.querySelectorAll('textarea').forEach(el => autoResize(el)); 
+        
+        // KOD DIBETULKAN: Hanya sasar label dan kotak nota sahaja, BUKAN kotak parent!
+        let notesText = document.getElementById('doc-terms').value.trim();
+        let docTerms = document.getElementById('doc-terms');
+        let notesLabel = docTerms ? docTerms.previousElementSibling : null; // Ambil label di atas kotak nota
+        let notesMirror = document.getElementById('doc-terms-mirror');
+        
+        if(notesText === "") {
+            if(notesLabel) notesLabel.style.display = "none";
+            if(notesMirror) notesMirror.style.display = "none";
+        } else {
+            if(notesLabel) notesLabel.style.display = "block";
+            if(notesMirror) notesMirror.style.display = "block"; 
+        }
+        
+        document.body.className = ''; 
+        document.body.classList.add('printing-invoice'); 
+        
+        let title = document.getElementById('doc-title-display').innerText.replace(/\s+/g, '_'); 
+        let cName = document.getElementById('doc-custName').value.replace(/[^a-zA-Z0-9]/g, ""); 
+        let no = document.getElementById('doc-no').value;
+        let oriTitle = document.title; 
+        document.title = `${title}_${cName}_${no}`;
+        
+        let cleanupPrint = function() {
+            document.title = oriTitle; 
+            document.body.className = ''; 
+            // Munculkan kembali label selepas selesai print
+            if(notesLabel) notesLabel.style.display = "block";
+            window.removeEventListener('focus', cleanupPrint);
+            window.removeEventListener('touchstart', cleanupPrint);
+            window.removeEventListener('click', cleanupPrint);
+        };
+
+        setTimeout(() => {
+            window.print();
+            setTimeout(() => {
+                window.addEventListener('focus', cleanupPrint);
+                window.addEventListener('touchstart', cleanupPrint);
+                window.addEventListener('click', cleanupPrint);
+            }, 1500); 
+        }, 500); 
+    };
+
+    // --- ENJIN KHAS UNTUK PURCHASE ORDER (PO) ---
+    window.addPoServiceRow = function(desc="", days="", price="") {
+        let tr = document.createElement('tr'); tr.style.fontSize = "12px"; tr.style.borderBottom = "1px dotted #ccc";
+        let no = document.querySelectorAll('#po-services-body tr').length + 1;
+        tr.innerHTML = `
+            <td style="padding:5px;">${no}</td>
+            <td style="padding:5px;">
+                <input type="text" name="po_svc_desc" autocomplete="off" class="doc-input po-svc-desc" style="width:100%;" value="${desc}" oninput="this.nextElementSibling.innerText=this.value">
+                <div class="print-mirror" style="min-height:14px; font-weight:bold; text-transform:uppercase;">${desc}</div>
+            </td>
+            <td style="padding:5px; text-align:center;"><input type="number" name="po_svc_days" autocomplete="off" class="doc-input po-svc-days" style="width:100%; text-align:center;" value="${days}" oninput="calcPoTotals()"></td>
+            <td style="padding:5px; text-align:right;"><input type="number" name="po_svc_price" autocomplete="off" class="doc-input po-svc-price" style="width:100%; text-align:right;" value="${price}" step="0.01" oninput="calcPoTotals()"></td>
+            <td style="padding:5px; text-align:right; font-weight:bold;" class="po-svc-total">0.00</td>
+            <td class="no-print" style="padding:5px; text-align:center;"><button class="btn btn-remove" onclick="this.closest('tr').remove(); updatePoServiceNos(); calcPoTotals()">X</button></td>
+        `;
+        document.getElementById('po-services-body').appendChild(tr); calcPoTotals();
+    };
+    
+    window.updatePoServiceNos = function() { document.querySelectorAll('#po-services-body tr').forEach((row, index) => row.cells[0].innerText = index + 1); };
+
+   window.addPoMaterialRow = function(desc="", qty="", price="") {
+        let tr = document.createElement('tr'); tr.style.fontSize = "12px"; tr.style.borderBottom = "1px dotted #ccc";
+        let no = document.querySelectorAll('#po-materials-body tr').length + 1;
+        tr.innerHTML = `
+            <td style="padding:5px;">${no}</td>
+            <td style="padding:5px;">
+                <input type="text" name="po_mat_desc" autocomplete="off" class="doc-input po-mat-desc" style="width:100%;" value="${desc}" oninput="this.nextElementSibling.innerText=this.value">
+                <div class="print-mirror" style="min-height:14px; font-weight:bold; text-transform:uppercase;">${desc}</div>
+            </td>
+            <td style="padding:5px; text-align:center;"><input type="number" name="po_mat_qty" autocomplete="off" class="doc-input po-mat-qty" style="width:100%; text-align:center;" value="${qty}" oninput="calcPoTotals()"></td>
+            <td style="padding:5px; text-align:right;"><input type="number" name="po_mat_price" autocomplete="off" class="doc-input po-mat-price" style="width:100%; text-align:right;" value="${price}" step="0.01" oninput="calcPoTotals()"></td>
+            <td style="padding:5px; text-align:right; font-weight:bold;" class="po-mat-total">0.00</td>
+            <td class="no-print" style="padding:5px; text-align:center;"><button class="btn btn-remove" onclick="this.closest('tr').remove(); updatePoMaterialNos(); calcPoTotals()">X</button></td>
+        `;
+        document.getElementById('po-materials-body').appendChild(tr); calcPoTotals();
+    };
+    
+    window.updatePoMaterialNos = function() { document.querySelectorAll('#po-materials-body tr').forEach((row, index) => row.cells[0].innerText = index + 1); };
+
+    window.calcPoTotals = function() {
+        let totSvc = 0;
+        document.querySelectorAll('#po-services-body tr').forEach(row => {
+            let d = parseFloat(row.querySelector('.po-svc-days').value) || 0; let p = parseFloat(row.querySelector('.po-svc-price').value) || 0; let tot = d * p;
+            row.querySelector('.po-svc-total').innerText = tot.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}); totSvc += tot;
+        });
+        document.getElementById('po-tot-services').innerText = totSvc.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+
+        let totMat = 0;
+        document.querySelectorAll('#po-materials-body tr').forEach(row => {
+            let q = parseFloat(row.querySelector('.po-mat-qty').value) || 0; let p = parseFloat(row.querySelector('.po-mat-price').value) || 0; let tot = q * p;
+            row.querySelector('.po-mat-total').innerText = tot.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}); totMat += tot;
+        });
+        document.getElementById('po-tot-materials').innerText = totMat.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+
+        document.getElementById('po-grand-total').innerText = (totSvc + totMat).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+    };
+</script>
+</body>
+</html>

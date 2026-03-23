@@ -1,0 +1,1356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Kewangan 313 - Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --text-main: #000000; --text-muted: #111111;
+            --border-light: #cccccc; --border-dark: #222222;
+            --accent: #e74c3c; --bg-body: #f4f6f8; --nav-bg: #2c3e50;
+            --edit-bg: rgba(0, 0, 0, 0.03); --edit-border: rgba(0, 0, 0, 0.1);
+        }
+
+        body { font-family: 'Montserrat', sans-serif; margin: 0; padding: 0; background: var(--bg-body); color: var(--text-main); }
+        ::placeholder { color: #888888; font-weight: 500; text-transform: none; }
+
+        /* SKRIN PENGAKTIFAN */
+        .activation-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: rgba(0,0,0,0.85); backdrop-filter: blur(5px); z-index: 9999; display: flex; justify-content: center; align-items: center; }
+        .activation-box { background: white; padding: 40px; border-radius: 12px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.3); max-width: 400px; width: 90%; }
+        .activation-box h2 { margin-top: 0; font-weight: 800; color: #2c3e50; }
+        .activation-box p { font-size: 13px; color: #555; margin-bottom: 20px; line-height: 1.5; }
+        .activation-input { width: 100%; padding: 12px; margin-bottom: 20px; border: 2px solid #ddd; border-radius: 6px; font-family: 'Montserrat'; font-weight: 700; font-size: 16px; text-align: center; box-sizing: border-box; text-transform: uppercase; }
+        .activation-input:focus { border-color: var(--accent); outline: none; }
+        .btn-activate { background: var(--accent); color: white; padding: 12px 25px; border: none; border-radius: 6px; font-family: 'Montserrat'; font-weight: 700; font-size: 14px; cursor: pointer; width: 100%; transition: 0.3s; }
+        .btn-activate:hover { background: #c0392b; }
+        #loadingOverlay { display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); z-index: 9998; justify-content: center; align-items: center; flex-direction: column; font-weight: bold; color: #2c3e50;}
+
+        /* MAIN TOP NAVBAR */
+        .navbar { background: var(--nav-bg); padding: 0 20px; display: flex; align-items: center; overflow-x: auto; white-space: nowrap; box-shadow: 0 4px 10px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 1000;}
+        .nav-brand { color: white; font-weight: 800; font-size: 18px; margin-right: 30px; padding: 15px 0; letter-spacing: 1px;}
+        .nav-brand span { color: #f39c12; }
+        .nav-item { color: #bdc3c7; font-weight: 600; font-size: 13px; padding: 18px 15px; cursor: pointer; transition: 0.3s; border-bottom: 3px solid transparent; text-decoration: none; display: inline-block;}
+        .nav-item:hover { color: white; }
+        .nav-item.active { color: white; border-bottom-color: #f39c12; background: rgba(255,255,255,0.05); }
+        
+        /* SUB NAVBAR */
+        .sub-navbar { background: #fff; padding: 0 20px; display: flex; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 20px; border-bottom: 1px solid #ddd; overflow-x: auto;}
+        .sub-nav-item { padding: 15px 20px; font-size: 13px; font-weight: 700; color: #555; cursor: pointer; border-bottom: 3px solid transparent; transition: 0.2s; white-space: nowrap;}
+        .sub-nav-item.active { color: #2980b9; border-bottom-color: #2980b9; }
+
+        .tab-content { display: none; padding: 10px 20px 100px 20px; }
+        .tab-content.active { display: block; }
+
+        .module-header { max-width: 1000px; margin: 0 auto 20px; }
+        .module-title { font-size: 24px; font-weight: 800; color: #2c3e50; margin: 0 0 5px 0; }
+        .module-subtitle { font-size: 13px; color: #7f8c8d; margin: 0; }
+
+        .settings-card { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); margin: 0 auto 20px auto; }
+        .settings-card h3 { margin-top: 0; border-bottom: 1px solid #eee; padding-bottom: 15px; color: #2c3e50;}
+        .btn { padding: 0 15px; border-radius: 4px; border: none; cursor: pointer; font-family: 'Montserrat'; font-weight: 600; font-size: 12px; transition: 0.2s; white-space: nowrap; height: 36px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .btn-new { background: #2ecc71; color: white; }
+        .btn-add { background: #ecf0f1; color: #333; }
+        .btn-save { background: #9b59b6; color: white; }
+        .btn-history { background: #3498db; color: white; }
+        .btn-remove { background: #ff4757; color: white; padding: 4px 8px; font-size: 10px; border-radius: 3px; height: auto; }
+        .btn-danger-outline { background: transparent; border: 2px solid #e74c3c; color: #e74c3c; font-weight: bold; width: 100%; padding: 15px; height: auto; font-size: 14px; margin-top: 15px;}
+        .btn-danger-outline:hover { background: #e74c3c; color: white; }
+        .custom-select { padding: 0 10px; border-radius: 4px; border: 1px solid #ddd; font-family: 'Montserrat'; font-weight: 600; font-size: 12px; height: 36px; outline: none; background: white; color: #333; cursor: pointer; flex-shrink: 0; }
+        .table-responsive { width: 100%; overflow-x: auto; margin-bottom: 30px; }
+
+        @media screen and (max-width: 768px) {
+            .navbar, .sub-navbar { padding: 5px 10px; flex-wrap: nowrap; overflow-x: auto; }
+            .nav-brand { margin-right: 15px; font-size: 16px; }
+            .nav-item, .sub-nav-item { font-size: 13px; padding: 12px 10px; flex: 0 0 auto; }
+            div[style*="display: flex; gap: 20px;"], div[style*="display: flex; gap: 15px;"] { flex-direction: column !important; gap: 15px !important; }
+            .settings-card { flex: none !important; min-width: 100% !important; width: 100% !important; box-sizing: border-box; }
+        }
+        /* SISTEM USER ROLES (ADMIN VS STAFF) */
+        body.role-staff .admin-only { 
+            display: none !important; 
+        }
+        body.role-staff .staff-disabled {
+            pointer-events: none !important;
+            opacity: 0.5 !important;
+            filter: grayscale(100%);
+        }
+        
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+</head>
+<body>
+
+<!-- OVERLAY AUTHENTICATION BARU (LOGIN, REGISTER, FORGOT PASSWORD) -->
+<div id="authOverlay" class="activation-overlay" style="display: flex;">
+  <div class="activation-box">
+      <h2 style="margin-bottom: 5px;">Sistem Kewangan 313</h2>
+      
+      <!-- Tab Navigasi Auth -->
+      <div style="display: flex; gap: 10px; margin-bottom: 20px; margin-top: 20px;">
+          <button class="btn" id="tabLogin" onclick="showAuthForm('login')" style="flex: 1; background: #2c3e50; color: white;">Log Masuk</button>
+          <button class="btn" id="tabRegister" onclick="showAuthForm('register')" style="flex: 1; background: #ecf0f1; color: #333;">Daftar Baru</button>
+      </div>
+
+      <!-- Form 1: Log Masuk -->
+      <div id="formLogin">
+          <p style="font-size: 13px; margin-bottom: 20px;">Sila log masuk akaun anda.</p>
+          <input type="email" id="loginEmail" class="activation-input" placeholder="E-mel" autocapitalize="none">
+          <input type="password" id="loginPass" class="activation-input" placeholder="Kata Laluan" onkeypress="if(event.key === 'Enter') loginUser()">
+          <button class="btn-activate" id="btnLogin" onclick="loginUser()">LOG MASUK</button>
+          <p style="font-size: 12px; margin-top: 15px; color: #3498db; cursor: pointer; font-weight: 600;" onclick="showAuthForm('forgot')">Lupa Kata Laluan?</p>
+      </div>
+
+      <!-- Form 2: Daftar Baru (Register) -->
+      <div id="formRegister" style="display: none;">
+          <p style="font-size: 13px; margin-bottom: 20px;">Daftar menggunakan Kod Akses (License Key).</p>
+          <input type="text" id="regName" class="activation-input" placeholder="Nama Penuh / Nama Syarikat">
+          <input type="email" id="regEmail" class="activation-input" placeholder="E-mel" autocapitalize="none">
+          <input type="password" id="regPass" class="activation-input" placeholder="Cipta Kata Laluan Baru">
+          <input type="text" id="regLicense" class="activation-input" placeholder="Kod Akses (Cth: BOS-TEST-2026)" style="border-color: #f39c12; color: #d35400;">
+          <button class="btn-activate" id="btnRegister" style="background: #2ecc71;" onclick="registerUser()">DAFTAR AKAUN</button>
+      </div>
+
+      <!-- Form 3: Lupa Kata Laluan -->
+      <div id="formForgot" style="display: none;">
+          <p style="font-size: 13px; margin-bottom: 20px;">Masukkan e-mel untuk reset kata laluan.</p>
+          <input type="email" id="forgotEmail" class="activation-input" placeholder="E-mel Berdaftar" autocapitalize="none">
+          <button class="btn-activate" id="btnForgot" style="background: #e67e22;" onclick="resetPassword()">HANTAR LINK RESET</button>
+          <p style="font-size: 12px; margin-top: 15px; color: #7f8c8d; cursor: pointer; font-weight: 600;" onclick="showAuthForm('login')">Kembali ke Log Masuk</p>
+      </div>
+  </div>
+</div>
+
+<div id="loadingOverlay">
+  <div style="font-size: 30px; margin-bottom: 10px;">⏳</div>
+  <div>Syncing Cloud Data...</div>
+</div>
+
+<div class="navbar no-print">
+    <div class="nav-brand">Sistem<span> Kewangan 313</span></div>
+    <a href="index.html" class="nav-item active" data-i18n="nav_dashboard">🏠 Dashboard & Settings</a>
+    <a href="ar.html" class="nav-item" data-i18n="nav_ar">👥 Receivables (A/R)</a>
+    <a href="ap.html" class="nav-item" data-i18n="nav_ap">🏭 Payables (A/P)</a>
+    <a href="cashbook.html" class="nav-item" data-i18n="nav_cashbook">📘 Cashbook & Bank</a>
+    <a href="gl.html" class="nav-item admin-only" data-i18n="nav_gl">📊 Accounts & Audit (GL)</a>
+    
+    <div style="margin-left: auto; padding-right: 10px; display: flex; align-items: center;">
+        <select id="lang-selector" class="custom-select" onchange="changeLanguage(this.value)" style="background:#34495e; color:white; border-color:#f39c12; outline:none; font-weight:700;">
+            <option value="en">🇬🇧 English</option>
+            <option value="ms">🇲🇾 B. Melayu</option>
+        </select>
+    </div>
+    <div class="nav-item no-print" data-i18n="nav_logout" style="color: #ff7675; font-weight: 800; border-left: 2px solid rgba(255,255,255,0.1); margin-left: 5px; padding-left: 15px;" onclick="logOutPremium()">🚪 Logout</div>
+</div>
+
+<div class="sub-navbar no-print">
+    <div class="sub-nav-item active" data-i18n="sub_dash" onclick="switchSubTab('tab-dashboard')">📈 Main Dashboard</div>
+    <div class="sub-nav-item" data-i18n="sub_db" onclick="switchSubTab('tab-database')">🗂️ Database</div>
+    <div class="sub-nav-item" data-i18n="sub_set" onclick="switchSubTab('tab-settings')">⚙️ Company Profile</div>
+</div>
+
+<div id="tab-dashboard" class="tab-content active">
+    <div class="module-header no-print">
+        <h2 class="module-title" data-i18n="lbl_dash_title">Main Dashboard</h2>
+        <p class="module-subtitle" data-i18n="lbl_dash_sub">Your business summary at a glance.</p>
+    </div>
+
+    <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 25px;">
+        <div class="settings-card" style="flex: 1; min-width: 150px; text-align: center; border-top: 5px solid #3498db; margin-bottom: 0; padding: 20px 10px;">
+            <h3 style="color: #7f8c8d; font-size: 11px; margin-bottom: 5px; border: none; padding: 0;">📊 <span data-i18n="lbl_dash_sales">GROSS SALES</span></h3>
+            <div style="font-size: 22px; font-weight: 800; color: #2980b9;">RM <span id="dash-total-sales">0.00</span></div>
+        </div>
+        <div class="settings-card" style="flex: 1; min-width: 150px; text-align: center; border-top: 5px solid #2ecc71; margin-bottom: 0; padding: 20px 10px;">
+            <h3 style="color: #7f8c8d; font-size: 11px; margin-bottom: 5px; border: none; padding: 0;">💰 <span data-i18n="lbl_dash_cash">TOTAL COLLECTED</span></h3>
+            <div style="font-size: 22px; font-weight: 800; color: #27ae60;">RM <span id="dash-collected">0.00</span></div>
+        </div>
+        <div class="settings-card" style="flex: 1; min-width: 150px; text-align: center; border-top: 5px solid #e67e22; margin-bottom: 0; padding: 20px 10px;">
+            <h3 style="color: #7f8c8d; font-size: 11px; margin-bottom: 5px; border: none; padding: 0;">⏳ <span data-i18n="lbl_dash_ar">ACCOUNTS RECEIVABLE</span></h3>
+            <div style="font-size: 22px; font-weight: 800; color: #d35400;">RM <span id="dash-outstanding">0.00</span></div>
+        </div>
+        <div class="settings-card" style="flex: 1; min-width: 150px; text-align: center; border-top: 5px solid #c0392b; margin-bottom: 0; padding: 20px 10px;">
+            <h3 style="color: #7f8c8d; font-size: 11px; margin-bottom: 5px; border: none; padding: 0;">🛑 <span data-i18n="lbl_dash_ap">ACCOUNTS PAYABLE</span></h3>
+            <div style="font-size: 22px; font-weight: 800; color: #c0392b;">RM <span id="dash-ap-total">0.00</span></div>
+        </div>
+    </div>
+
+    <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+        <div class="settings-card admin-only" style="flex: 1; min-width: 300px; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <h3 style="margin-top: 0; border-bottom: 1px solid #eee; padding-bottom: 15px; color: #2c3e50;" data-i18n="lbl_dash_fin">📉 Cashbook Flow</h3>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-weight: 600; font-size: 14px;">
+                    <span data-i18n="lbl_dash_in">Total Cash In:</span> <span style="color: #2ecc71;">RM <span id="dash-income">0.00</span></span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-weight: 600; font-size: 14px;">
+                    <span data-i18n="lbl_dash_out">Total Expenses:</span> <span style="color: #e74c3c;">- RM <span id="dash-expense">0.00</span></span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-top: 15px; padding-top: 15px; border-top: 2px dashed #eee; font-weight: 800; font-size: 18px;">
+                    <span data-i18n="lbl_dash_profit">Current Balance:</span> <span id="dash-profit">RM 0.00</span>
+                </div>
+            </div>
+            <div style="margin-top: 20px; position: relative; height: 150px; display: flex; justify-content: center;">
+                <canvas id="cashflowDonut"></canvas>
+            </div>
+        </div>
+        
+        <div class="settings-card" style="flex: 1.5; min-width: 350px;">
+            <h3 style="margin-top: 0; border-bottom: 1px solid #eee; padding-bottom: 15px; color: #2c3e50;">📊 Monthly Cashflow Trend</h3>
+            <div style="position: relative; height: 250px; width: 100%;">
+                <canvas id="monthlyBarChart"></canvas>
+            </div>
+        </div>
+
+        <div class="settings-card" style="flex: 1; min-width: 300px;">
+            <h3 style="margin-top: 0; border-bottom: 1px solid #eee; padding-bottom: 15px; color: #2c3e50;" data-i18n="lbl_dash_ar_list">⚠️ Top Outstanding Receivables</h3>
+            <div class="table-responsive" style="margin-bottom:0; max-height: 250px; overflow-y: auto;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: #f8f9fa;">
+                            <th style="padding: 10px; text-align:left; font-size: 11px;" data-i18n="lbl_dash_ref">Ref</th>
+                            <th style="padding: 10px; text-align:left; font-size: 11px;" data-i18n="lbl_dash_client">Client</th>
+                            <th style="padding: 10px; text-align:right; font-size: 11px;" data-i18n="lbl_dash_bal">Balance (RM)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dash-outstanding-list"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="tab-database" class="tab-content">
+    <div class="module-header">
+        <h2 class="module-title" data-i18n="lbl_db_title">Database (Auto-Fill)</h2>
+        <p class="module-subtitle" data-i18n="lbl_db_sub">Save clients, suppliers, items & AC Codes to save typing time.</p>
+    </div>
+
+    <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 20px;">
+        <div class="settings-card" style="flex: 1; min-width: 300px;">
+            <h3 data-i18n="lbl_db_client_list">👥 Client List</h3>
+            <input type="text" id="db-c-name" class="activation-input" style="padding:10px; margin-bottom:10px;" data-i18n-ph="ph_db_c_name" placeholder="Client / Company Name">
+            <textarea id="db-c-addr" data-i18n-ph="ph_db_c_addr" placeholder="Client Address" style="width:100%; padding:10px; box-sizing:border-box; border:2px solid #ddd; border-radius:6px; margin-bottom:10px; min-height:100px; font-family:'Montserrat';"></textarea>
+            <button class="btn btn-new" style="width:100%; padding:12px;" data-i18n="btn_db_save_c" onclick="saveDBClient()">Save Client</button>
+            <div id="list-db-clients" style="margin-top:20px; font-size:13px; max-height: 200px; overflow-y: auto;"></div>
+        </div>
+        
+        <div class="settings-card" style="flex: 1; min-width: 300px;">
+            <h3 data-i18n="lbl_db_supp_list">🏭 Supplier List</h3>
+            <input type="text" id="db-s-name" class="activation-input" style="padding:10px; margin-bottom:10px;" data-i18n-ph="ph_db_s_name" placeholder="Supplier / Company Name">
+            <textarea id="db-s-addr" data-i18n-ph="ph_db_s_addr" placeholder="Supplier Address & Contact" style="width:100%; padding:10px; box-sizing:border-box; border:2px solid #ddd; border-radius:6px; margin-bottom:10px; min-height:100px; font-family:'Montserrat';"></textarea>
+            <button class="btn btn-save" style="width:100%; padding:12px; background:#c0392b;" data-i18n="btn_db_save_s" onclick="saveDBSupplier()">Save Supplier</button>
+            <div id="list-db-suppliers" style="margin-top:20px; font-size:13px; max-height: 200px; overflow-y: auto;"></div>
+        </div>
+    </div>
+
+    <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+        <div class="settings-card" style="flex: 1; min-width: 300px;">
+            <h3 data-i18n="lbl_db_item_list">📦 Item / Service List</h3>
+            <input type="text" id="db-i-name" class="activation-input" style="padding:10px; margin-bottom:10px;" data-i18n-ph="ph_db_i_name" placeholder="Item / Service Name">
+            <input type="number" id="db-i-price" data-i18n-ph="ph_db_i_price" placeholder="Default Price (RM)" style="width:100%; padding:10px; box-sizing:border-box; border:2px solid #ddd; border-radius:6px; font-family:'Montserrat'; margin-bottom:10px; font-weight:bold;">
+            <button class="btn btn-history" style="width:100%; padding:12px; background:#e67e22;" data-i18n="btn_db_save_i" onclick="saveDBItem()">Save Item</button>
+            <div id="list-db-items" style="margin-top:20px; font-size:13px; max-height: 200px; overflow-y: auto;"></div>
+        </div>
+        
+        <div class="settings-card" style="flex: 1; min-width: 300px; border-top: 5px solid #8e44ad;">
+            <h3>🗂️ Chart of Accounts (A/C Codes)</h3>
+            <button id="btnAutoSet" class="btn" style="background:#34495e; color:white; width:100%; margin-bottom:15px;" onclick="autoSetDefaultAccounts()">⚡ JANA AKAUN STANDARD (AUTO-SET)</button>
+            <p style="font-size:11px; color:#777; margin-top:-10px; margin-bottom:15px;">Daftar kod perbelanjaan di sini untuk auto-fill dalam Payment Voucher (PV) & Cashbook.</p>
+            <div style="display:flex; gap:10px;">
+                <input type="text" id="db-ac-code" class="activation-input" style="padding:10px; margin-bottom:10px; width:40%;" placeholder="A/C No (Eg: 5001)">
+                <input type="text" id="db-ac-name" class="activation-input" style="padding:10px; margin-bottom:10px; width:60%; text-transform:uppercase;" placeholder="A/C Name (Eg: SEWA)">
+            </div>
+            <button class="btn" style="width:100%; padding:12px; background:#8e44ad; color:white;" onclick="saveDBAccountCode()">💾 Save A/C Code</button>
+            <div id="list-db-accounts" style="margin-top:20px; font-size:13px; max-height: 200px; overflow-y: auto; border:1px solid #eee; padding:10px; border-radius:6px;"></div>
+        </div>
+    </div>
+</div>
+
+<div id="tab-settings" class="tab-content">
+    <div class="module-header">
+        <h2 class="module-title" data-i18n="lbl_set_title">Company Profile & Settings</h2>
+        <p class="module-subtitle" data-i18n="lbl_set_sub">Manage your business information and keep data secure.</p>
+    </div>
+
+    <div class="settings-card" style="max-width: 800px;">
+        <h3 data-i18n="lbl_set_prof">🏢 Default Company Profile</h3>
+        <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 20px;">
+            <div style="flex: 1; min-width: 250px;">
+                <label style="font-size: 12px; font-weight: 600; color: #555;" data-i18n="lbl_set_logo">Upload Logo</label><br>
+                <input type="file" id="setting-logo-input" accept="image/*" onchange="previewSettingLogo(this)" style="display:none;">
+                <button class="btn btn-add" style="background:#dff9fb; border:1px solid #c7ecee; width: 100%; margin-bottom: 10px;" data-i18n="btn_set_logo" onclick="document.getElementById('setting-logo-input').click()">🖼️ Choose New Logo</button>
+
+                <div style="background: #f9f9f9; padding: 10px; border-radius: 6px; text-align: center; border: 1px dashed #ccc; margin-bottom:10px;">
+                    <img id="setting-logo-preview" src="https://via.placeholder.com/200x80?text=LOGO" style="max-width: 100%; max-height: 80px; object-fit: contain;">
+                </div>
+
+                <label style="font-size: 11px; font-weight: 600; color: #555;" data-i18n="lbl_set_size">Logo Size:</label>
+                <input type="range" id="setting-logoSize" min="30" max="400" value="120" style="width: 100%; margin-bottom: 10px;" oninput="adjustSettingLogo()">
+            </div>
+            <div style="flex: 2; min-width: 300px;">
+                <label style="font-size: 12px; font-weight: 600; color: #555;" data-i18n="lbl_set_name">Company Name</label>
+                <input type="text" id="setting-coName" class="activation-input" style="padding:10px; margin-bottom:15px; text-transform:uppercase;" placeholder="Eg: THE BANGSAWAN">
+                <label style="font-size: 12px; font-weight: 600; color: #555;">No. TIN (LHDN)</label>
+                <input type="text" id="setting-tinNumber" class="activation-input" style="padding:10px; margin-bottom:15px; text-transform:uppercase;" placeholder="Cth: IG1234567890">
+                <label style="font-size: 12px; font-weight: 600; color: #555;" data-i18n="lbl_set_addr">Address & Contact</label>
+                <textarea id="setting-coAddr" placeholder="Full address, Tel, Email..." style="width:100%; padding:10px; box-sizing:border-box; border:2px solid #ddd; border-radius:6px; margin-bottom:15px; min-height:80px; font-family:'Montserrat';"></textarea>
+                <label style="font-size: 12px; font-weight: 600; color: #555;" data-i18n="lbl_set_terms">Terms & Conditions (Default)</label>
+                <textarea id="setting-terms" placeholder="Payment terms..." style="width:100%; padding:10px; box-sizing:border-box; border:2px solid #ddd; border-radius:6px; margin-bottom:15px; min-height:50px; font-family:'Montserrat';"></textarea>
+                <div style="background:#f9f9f9; border:1px solid #ddd; border-radius:6px; padding:15px; margin-bottom:15px;">
+    <label style="font-size: 12px; font-weight: 700; color: #2c3e50; margin-bottom:10px; display:block;">🏦 Senarai Akaun Bank Syarikat (Boleh lebih dari satu)</label>
+    
+    <div style="display:flex; gap:10px; margin-bottom:10px; flex-wrap:wrap;">
+        <select id="new-bank-name" class="activation-input" style="flex:1; min-width:150px; margin-bottom:0; padding:10px; font-size:12px;">
+            <option value="">-- Pilih Bank --</option>
+            <option value="MAYBANK">MAYBANK</option>
+            <option value="CIMB BANK">CIMB BANK</option>
+            <option value="PUBLIC BANK">PUBLIC BANK</option>
+            <option value="RHB BANK">RHB BANK</option>
+            <option value="HONG LEONG BANK">HONG LEONG BANK</option>
+            <option value="AMBANK">AMBANK</option>
+            <option value="BANK ISLAM">BANK ISLAM</option>
+            <option value="BANK RAKYAT">BANK RAKYAT</option>
+            <option value="BSN">BSN</option>
+            <option value="AFFIN BANK">AFFIN BANK</option>
+            <option value="ALLIANCE BANK">ALLIANCE BANK</option>
+            <option value="OCBC BANK">OCBC BANK</option>
+            <option value="STANDARD CHARTERED">STANDARD CHARTERED</option>
+            <option value="LAIN-LAIN">LAIN-LAIN (Sila Taip)</option>
+        </select>
+        
+        <div id="custom-bank-input" style="display:none; width:100%; margin-top:5px;">
+            <input type="text" id="new-bank-custom" class="activation-input" style="width:100%; margin-bottom:0; padding:10px; font-size:12px; text-transform:uppercase;" placeholder="Sila taip nama bank...">
+        </div>
+
+        <input type="text" id="new-bank-holder" class="activation-input" style="flex:1; min-width:200px; margin-bottom:0; padding:10px; font-size:12px; text-transform:uppercase;" placeholder="Nama Pemegang Akaun">
+        
+        <input type="text" id="new-bank-ac" class="activation-input" style="flex:1; min-width:150px; margin-bottom:0; padding:10px; font-size:12px;" placeholder="No. Akaun">
+        
+        <button class="btn btn-primary" onclick="addCompanyBank()" style="padding:10px 15px; background:#2980b9; color:white; min-width:100px;">+ Tambah</button>
+    </div>
+    
+    <div id="company-bank-list" style="border:1px dashed #ccc; border-radius:4px; padding:10px; background:white; min-height:50px;">
+        <div style='color:#999; font-size:11px; text-align:center;'>Tiada akaun bank ditambah.</div>
+    </div>
+</div>
+            </div>
+        </div>
+        <button class="btn btn-save" style="width: 100%; padding: 15px; font-size: 14px; font-weight: 800; background: #2c3e50;" data-i18n="btn_set_save" onclick="saveCompanyProfile()">💾 SAVE COMPANY PROFILE</button>
+    </div>
+
+    <div class="settings-card" style="max-width: 800px;">
+        <h3 data-i18n="lbl_set_cat">📂 Expense Category Management</h3>
+        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+            <input type="text" id="new-category-input" class="activation-input" style="margin-bottom:0; flex:1; text-transform:uppercase;" data-i18n-ph="ph_set_cat" placeholder="Eg: FUEL & TOLL">
+            <button class="btn btn-add" style="background:#f39c12; color:white; padding:0 20px; font-weight:800;" data-i18n="btn_set_add" onclick="addCategory()">+ Add</button>
+        </div>
+        <div id="list-categories" style="max-height: 200px; overflow-y: auto; background:#f9f9f9; padding:15px; border-radius:6px; border:1px solid #eee;"></div>
+    </div>
+
+    <div class="settings-card" style="max-width: 800px;">
+        <h3 data-i18n="lbl_set_db_title">☁️ Data Management & Backup</h3>
+        <p style="font-size: 14px; color: #555; line-height: 1.6; margin-bottom: 20px;" data-i18n="lbl_set_db_desc">Your data is synced to <b>Cloud Firebase</b>. You can manually download backup data here.</p>
+        <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+            <button class="btn btn-new" style="padding: 15px 25px; font-size: 14px; background: #34495e; flex:1;" data-i18n="btn_set_backup" onclick="exportDataPremium()">📥 Download Backup</button>
+            <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importDataPremium(event)">
+            <button class="btn btn-history" style="padding: 15px 25px; font-size: 14px; background: #e67e22; flex:1;" data-i18n="btn_set_restore" onclick="document.getElementById('importFile').click()">📤 Upload Restore Data</button>
+        </div>
+        
+        <button class="btn btn-danger-outline" onclick="factoryReset()">⚠️ ERASE ALL DATA (FACTORY RESET)</button>
+    </div>
+</div>
+
+<script>
+    // ==========================================
+    // --- KAMUS TERJEMAHAN ---
+    // ==========================================
+    let currentLang = "en"; 
+
+    const dict = {
+        "en": {
+            "nav_dashboard": "🏠 Dashboard & Settings", "nav_ar": "👥 Receivables (A/R)", "nav_ap": "🏭 Payables (A/P)",
+            "nav_cashbook": "📘 Cashbook & Bank", "nav_gl": "📊 Accounts & Audit (GL)", "nav_logout": "🚪 Logout",
+            "sub_dash": "📈 Main Dashboard", "sub_db": "🗂️ Database", "sub_set": "⚙️ Company Profile",
+            "lbl_dash_title": "Main Dashboard", "lbl_dash_sub": "Your business summary at a glance.",
+            "lbl_dash_sales": "GROSS SALES", "lbl_dash_cash": "TOTAL COLLECTED", "lbl_dash_ar": "ACCOUNTS RECEIVABLE", "lbl_dash_ap": "ACCOUNTS PAYABLE",
+            "lbl_dash_fin": "📉 Cashbook Flow", "lbl_dash_in": "Total Cash In:", "lbl_dash_out": "Total Expenses:", "lbl_dash_profit": "Current Balance:",
+            "lbl_dash_ar_list": "⚠️ Top Outstanding Receivables", "lbl_dash_ap_list": "🚨 Trade Payables (Overdue Warning)",
+            "lbl_dash_ref": "Ref", "lbl_dash_client": "Client", "lbl_dash_supp": "Supplier", "lbl_dash_due": "Due Date", "lbl_dash_bal": "Balance (RM)",
+            "msg_dash_no_ar": "No trade receivables. 🎉", "msg_dash_no_ap": "No overdue payables. Safe! ✅",
+            "lbl_db_title": "Database (Auto-Fill)", "lbl_db_sub": "Save clients, suppliers, items & AC Codes to save typing time.",
+            "lbl_db_client_list": "👥 Client List", "btn_db_save_c": "Save Client", "ph_db_c_name": "Client / Company Name", "ph_db_c_addr": "Client Address",
+            "lbl_db_supp_list": "🏭 Supplier List", "btn_db_save_s": "Save Supplier", "ph_db_s_name": "Supplier / Company Name", "ph_db_s_addr": "Supplier Address & Contact",
+            "lbl_db_item_list": "📦 Item / Service List", "btn_db_save_i": "Save Item", "ph_db_i_name": "Item / Service Name", "ph_db_i_price": "Default Price (RM)",
+            "lbl_set_title": "Company Profile & Settings", "lbl_set_sub": "Manage your business information and keep data secure.",
+            "lbl_set_prof": "🏢 Default Company Profile", "lbl_set_logo": "Upload Logo", "btn_set_logo": "🖼️ Choose New Logo", "lbl_set_size": "Logo Size:", 
+            "lbl_set_name": "Company Name", "lbl_set_addr": "Address & Contact", "lbl_set_terms": "Terms & Conditions (Default)", 
+            "lbl_set_bank": "Bank Account Info", "ph_set_bank": "Eg: Maybank - 1234567890 (Company Name)",
+            "btn_set_save": "💾 SAVE COMPANY PROFILE",
+            "lbl_set_cat": "📂 Expense Category Management", "btn_set_add": "+ Add", "ph_set_cat": "Eg: FUEL & TOLL",
+            "lbl_set_db_title": "☁️ Data Management & Backup", "lbl_set_db_desc": "Your data is synced to <b>Cloud Firebase</b>. You can manually download backup data here.",
+            "btn_set_backup": "📥 Download Backup", "btn_set_restore": "📤 Upload Restore Data"
+        },
+        "ms": {
+            "nav_dashboard": "🏠 Utama & Tetapan", "nav_ar": "👥 Pelanggan (A/R)", "nav_ap": "🏭 Pembekal (A/P)",
+            "nav_cashbook": "📘 Buku Tunai", "nav_gl": "📊 Akaun & Audit (GL)", "nav_logout": "🚪 Keluar",
+            "sub_dash": "📈 Papan Pemuka", "sub_db": "🗂️ Pangkalan Data", "sub_set": "⚙️ Profil Syarikat",
+            "lbl_dash_title": "Papan Pemuka Utama", "lbl_dash_sub": "Ringkasan perniagaan anda sepintas lalu.",
+            "lbl_dash_sales": "JUALAN KASAR", "lbl_dash_cash": "KUTIPAN BERJAYA", "lbl_dash_ar": "AKAUN BELUM TERIMA", "lbl_dash_ap": "AKAUN BELUM BAYAR",
+            "lbl_dash_fin": "📉 Aliran Tunai Cashbook", "lbl_dash_in": "Jumlah Duit Masuk:", "lbl_dash_out": "Jumlah Perbelanjaan:", "lbl_dash_profit": "Baki Semasa:",
+            "lbl_dash_ar_list": "⚠️ Tunggakan Hutang Utama", "lbl_dash_ap_list": "🚨 Kita Hutang Pembekal (Amaran Terlepas Tempoh)",
+            "lbl_dash_ref": "Rujukan", "lbl_dash_client": "Pelanggan", "lbl_dash_supp": "Pembekal", "lbl_dash_due": "Tarikh Due", "lbl_dash_bal": "Baki (RM)",
+            "msg_dash_no_ar": "Tiada orang hutang kita. 🎉", "msg_dash_no_ap": "Tiada hutang pembekal terlepas tempoh. Selamat! ✅",
+            "lbl_db_title": "Pangkalan Data (Auto-Fill)", "lbl_db_sub": "Simpan maklumat entiti & servis untuk jimat masa menaip di dokumen.",
+            "lbl_db_client_list": "👥 Senarai Pelanggan", "btn_db_save_c": "Simpan Pelanggan", "ph_db_c_name": "Nama Klien / Syarikat", "ph_db_c_addr": "Alamat Pelanggan",
+            "lbl_db_supp_list": "🏭 Senarai Pembekal", "btn_db_save_s": "Simpan Pembekal", "ph_db_s_name": "Nama Pembekal / Syarikat", "ph_db_s_addr": "Alamat Pembekal & No Telefon",
+            "lbl_db_item_list": "📦 Senarai Barangan / Servis", "btn_db_save_i": "Simpan Item", "ph_db_i_name": "Nama Barang / Servis", "ph_db_i_price": "Harga Default (RM)",
+            "lbl_set_title": "Profil Syarikat & Tetapan", "lbl_set_sub": "Urus maklumat perniagaan anda dan pastikan data selamat.",
+            "lbl_set_prof": "🏢 Profil Syarikat Asal (Default)", "lbl_set_logo": "Muat Naik Logo", "btn_set_logo": "🖼️ Pilih Logo Baru", "lbl_set_size": "Saiz Logo:", 
+            "lbl_set_name": "Nama Syarikat", "lbl_set_addr": "Alamat & Hubungan", "lbl_set_terms": "Terma & Syarat (Default)", 
+            "lbl_set_bank": "Maklumat Akaun Bank", "ph_set_bank": "Cth: Maybank - 1234567890 (Nama Syarikat)",
+            "btn_set_save": "💾 SIMPAN PROFIL SYARIKAT",
+            "lbl_set_cat": "📂 Pengurusan Kategori Belanja", "btn_set_add": "+ Tambah", "ph_set_cat": "Cth: MINYAK KENDERAAN",
+            "lbl_set_db_title": "☁️ Pengurusan Data & Backup", "lbl_set_db_desc": "Data anda kini disandarkan ke <b>Cloud Firebase</b>. Jika perlu, anda boleh muat turun data secara manual.",
+            "btn_set_backup": "📥 Muat Turun Backup", "btn_set_restore": "📤 Muat Naik Restore Data"
+        }
+    };
+
+    // FUNGSI UNTUK TUKAR-TUKAR FORM (LOGIN / REGISTER / FORGOT PASSWORD)
+function showAuthForm(type) {
+    document.getElementById('formLogin').style.display = 'none';
+    document.getElementById('formRegister').style.display = 'none';
+    document.getElementById('formForgot').style.display = 'none';
+    
+    document.getElementById('tabLogin').style.background = '#ecf0f1';
+    document.getElementById('tabLogin').style.color = '#333';
+    document.getElementById('tabRegister').style.background = '#ecf0f1';
+    document.getElementById('tabRegister').style.color = '#333';
+
+    if (type === 'login') {
+        document.getElementById('formLogin').style.display = 'block';
+        document.getElementById('tabLogin').style.background = '#2c3e50';
+        document.getElementById('tabLogin').style.color = 'white';
+    } else if (type === 'register') {
+        document.getElementById('formRegister').style.display = 'block';
+        document.getElementById('tabRegister').style.background = '#2c3e50';
+        document.getElementById('tabRegister').style.color = 'white';
+    } else if (type === 'forgot') {
+        document.getElementById('formForgot').style.display = 'block';
+        // Tab akan nampak kelabu dua-dua masa di skrin forgot
+    }
+}
+
+    function changeLanguage(lang) {
+        currentLang = lang;
+        document.getElementById('lang-selector').value = lang;
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            const key = el.getAttribute('data-i18n');
+            if(dict[lang][key]) el.innerHTML = dict[lang][key]; 
+        });
+        document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+            const key = el.getAttribute('data-i18n-ph');
+            if(dict[lang][key]) el.placeholder = dict[lang][key];
+        });
+        loadDatabase();
+        
+        let def = JSON.parse(localStorage.getItem('sys_companyDefaults')) || {};
+        def.language = lang;
+        localStorage.setItem('sys_companyDefaults', JSON.stringify(def));
+    }
+</script>
+
+<script type="module">
+    // Import SDK 
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, signOut, sendEmailVerification } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+    // Config Firebase Projek Baru Awak (Sistem 313)
+    const firebaseConfig = {
+        apiKey: "AIzaSyCjJab1uItHC62ZfZVD5nMtZZtm76fc46Y",
+        authDomain: "sistem313-8bba4.firebaseapp.com",
+        projectId: "sistem313-8bba4",
+        storageBucket: "sistem313-8bba4.firebasestorage.app",
+        messagingSenderId: "613290008986",
+        appId: "1:613290008986:web:a16e7141ab8f0e5dd89a23"
+    };
+    
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    window.auth = getAuth(app); 
+    window.db = getFirestore(app);
+    window.setDoc = setDoc;
+    window.getDoc = getDoc;
+    window.doc = doc;
+    window.signOut = signOut;
+    window.collection = collection;
+    window.getDocs = getDocs;
+    window.updateDoc = updateDoc;
+
+    // ==========================================
+    // --- 1. FUNGSI LOG MASUK (LOGIN) ---
+    // ==========================================
+    window.loginUser = async function() {
+        let email = document.getElementById('loginEmail').value.trim(); 
+        let pass = document.getElementById('loginPass').value.trim(); 
+        let btn = document.getElementById('btnLogin');
+
+        if(!email || !pass) return alert("Sila masukkan E-mel dan Kata Laluan!");
+        btn.innerText = "MENYEMAK..."; btn.disabled = true;
+
+        try {
+            const userCredential = await signInWithEmailAndPassword(window.auth, email, pass);
+            const user = userCredential.user;
+
+            // KOD DIKEMASKINI: Semak status pengesahan e-mel
+            if (!user.emailVerified) {
+                // Tanya user kalau nak resend verification email
+                if (confirm("E-mel anda belum disahkan. Sila semak Inbox atau folder Spam anda.\n\nKlik 'OK' jika anda mahu kami hantar semula pautan pengesahan baru ke e-mel anda.")) {
+                    await sendEmailVerification(user);
+                    alert("Pautan baru telah dihantar! Sila semak e-mel anda segera.");
+                }
+                
+                await window.signOut(window.auth); // Tendang keluar balik
+                btn.innerText = "LOG MASUK"; btn.disabled = false;
+                return;
+            }
+           
+            btn.innerText = "BERJAYA!";
+        } catch (error) {
+            btn.innerText = "LOG MASUK"; btn.disabled = false;
+            alert("RALAT LOG MASUK:\n" + (error.message || error));
+        }
+    };
+
+    // ==========================================
+    // --- 2. FUNGSI DAFTAR BARU (REGISTER) ---
+    // ==========================================
+    window.registerUser = async function() {
+        let name = document.getElementById('regName').value.trim();
+        let email = document.getElementById('regEmail').value.trim();
+        let pass = document.getElementById('regPass').value.trim();
+        let license = document.getElementById('regLicense').value.trim();
+        let btn = document.getElementById('btnRegister');
+
+        if(!name || !email || !pass || !license) return alert("Sila isi semua maklumat, termasuk Kod Akses!");
+        
+        let originalText = btn.innerText;
+        btn.innerText = "MENYEMAK KOD..."; 
+        btn.disabled = true;
+
+        try {
+            // 1. Semak Status Lesen
+            const licenseRef = doc(window.db, "license_codes", license);
+            const licenseSnap = await getDoc(licenseRef);
+
+            if (!licenseSnap.exists()) throw new Error("Kod Akses tidak wujud. Sila semak semula ejaan.");
+            if (licenseSnap.data().status !== "active") throw new Error("Kod Akses ini telah digunakan atau tidak aktif.");
+
+            btn.innerText = "MENDAFTAR...";
+            
+            // 2. Daftar Akaun Baru di Firebase Auth
+            const userCredential = await createUserWithEmailAndPassword(window.auth, email, pass);
+            const user = userCredential.user;
+            const companyId = "COMP_" + user.uid;
+
+            // 3. Hantar e-mel pengesahan
+            await sendEmailVerification(user);
+
+            // 4. Cipta data syarikat & profil
+            await setDoc(doc(window.db, "companies", companyId), {
+                company_name: name + " Enterprise", 
+                subscription_status: "active",
+                created_at: Date.now()
+            });
+
+            await setDoc(doc(window.db, "users", user.uid), {
+                email: email,
+                name: name,
+                company_id: companyId,
+                role: "admin"
+            });
+
+            // 5. Matikan Kod Lesen
+            await updateDoc(licenseRef, {
+                status: "used",
+                used_by: email,
+                used_at: Date.now()
+            });
+
+            // 6. Cuci memori dan Logout paksa
+            await window.signOut(window.auth);
+            localStorage.clear();
+
+            btn.innerText = "BERJAYA!";
+            alert("Pendaftaran berjaya! Sila semak e-mel anda (termasuk folder Spam) dan klik pautan pengesahan sebelum log masuk.");
+            
+            // 7. Bersihkan form & kembali ke tab Login
+            document.getElementById('regName').value = "";
+            document.getElementById('regEmail').value = "";
+            document.getElementById('regPass').value = "";
+            document.getElementById('regLicense').value = "";
+            showAuthForm('login');
+
+        } catch (error) {
+            alert("RALAT DAFTAR:\n" + (error.message || error));
+        } finally {
+            // INI PENTING: Apa-apa jadi (berjaya/gagal), butang wajib kembali asal
+            btn.innerText = originalText; 
+            btn.disabled = false;
+        }
+    };
+
+    // ==========================================
+    // --- 3. FUNGSI LUPA KATA LALUAN ---
+    // ==========================================
+    window.resetPassword = async function() {
+        let email = document.getElementById('forgotEmail').value.trim();
+        let btn = document.getElementById('btnForgot');
+        
+        if(!email) return alert("Sila masukkan e-mel pendaftaran anda.");
+        btn.innerText = "MENGHANTAR..."; btn.disabled = true;
+
+        try {
+            await sendPasswordResetEmail(window.auth, email);
+            btn.innerText = "HANTAR LINK RESET"; btn.disabled = false;
+            alert("Link untuk reset kata laluan telah dihantar ke e-mel anda. Sila semak Inbox atau Spam.");
+            showAuthForm('login'); 
+        } catch (error) {
+            btn.innerText = "HANTAR LINK RESET"; btn.disabled = false;
+            alert("RALAT:\n" + (error.message || error));
+        }
+    };
+
+    // ==========================================
+    // --- 4. PANTAU STATUS LOGIN & PULL DATA ---
+    // ==========================================
+    onAuthStateChanged(window.auth, async (user) => {
+       if (user && user.emailVerified) {
+            window.currentUserUID = user.uid; 
+            document.getElementById('authOverlay').style.display = 'none'; 
+            
+            try {
+                const userDoc = await getDoc(doc(window.db, "users", user.uid));
+                if (userDoc.exists()) {
+                    let userData = userDoc.data();
+                    window.currentCompanyId = userData.company_id; 
+                    
+                    if (userData.role === 'staff') { document.body.classList.add('role-staff'); } 
+                    else { document.body.classList.remove('role-staff'); }
+
+                    // Tunjuk loading screen
+                    let loadingBox = document.getElementById('loadingOverlay');
+                    if(loadingBox) loadingBox.style.display = 'flex';
+
+                    // 1. Tarik Data Transaksi dari Cloud (Sync Invois dll)
+                    if(window.pullDataFromCloud) {
+                        await window.pullDataFromCloud();
+                    }   
+                    
+                    // 2. Tarik & Load Profil Syarikat
+                    window.loadCompanyDefaults();
+                    
+                    // 3. Tarik & Load Database Klien
+                    window.loadDatabase();
+
+                    // Tutup loading screen
+                    if(loadingBox) loadingBox.style.display = 'none';
+
+                    // 4. Lancarkan graf dan nombor dashboard
+                    if(window.initApp) window.initApp(); 
+                }
+            } catch(e) { console.error("Gagal baca role:", e); }
+        } 
+        else { 
+            document.getElementById('authOverlay').style.display = 'flex'; 
+        }
+    });
+
+    // ==========================================
+    // --- 5. FUNGSI PROFIL SYARIKAT (FIRESTORE) ---
+    // ==========================================
+    // ==========================================
+    // --- 5. FUNGSI PROFIL SYARIKAT (FIRESTORE) ---
+    // ==========================================
+    window.saveCompanyProfile = async function() {
+        if (!window.currentCompanyId) return alert("Ralat: Sila log masuk dahulu.");
+
+        let btn = document.querySelector('button[onclick="saveCompanyProfile()"]');
+        let originalText = btn.innerText;
+        btn.innerText = "MENYIMPAN..."; btn.disabled = true;
+
+        try {
+            const companyData = {
+                company_name: document.getElementById('setting-coName').value.toUpperCase(),
+                tin_number: document.getElementById('setting-tinNumber').value.toUpperCase(), 
+                address: document.getElementById('setting-coAddr').value,
+                terms: document.getElementById('setting-terms').value,
+                
+                // KOD BARU: Kita hantar array Multi-Bank, BUKAN lagi kotak lama!
+                bankAccounts: window.companyBanks || [], 
+                
+                logoHeight: document.getElementById('setting-logoSize').value,
+                logo: document.getElementById('setting-logo-preview').src, 
+                updated_at: Date.now()
+            };
+
+            await window.updateDoc(window.doc(window.db, "companies", window.currentCompanyId), companyData);
+            
+            // Simpan ke localStorage supaya fail lain (ar.html) boleh guna
+            localStorage.setItem('sys_companyDefaults', JSON.stringify(companyData));
+
+            btn.innerText = originalText; btn.disabled = false;
+            alert("Profil Syarikat Berjaya Disimpan di Cloud! ☁️");
+        } catch (error) {
+            btn.innerText = originalText; btn.disabled = false;
+            alert("Ralat menyimpan profil:\n" + error.message);
+        }
+    };
+
+    window.loadCompanyDefaults = async function() {
+        if (!window.currentCompanyId) return;
+
+        try {
+            const docSnap = await window.getDoc(window.doc(window.db, "companies", window.currentCompanyId));
+            
+            if (docSnap.exists()) {
+                let data = docSnap.data();
+                
+                let setName = document.getElementById('setting-coName'); if(setName) setName.value = data.company_name || "";
+                let setTin = document.getElementById('setting-tinNumber'); if(setTin) setTin.value = data.tin_number || "";
+                let setAddr = document.getElementById('setting-coAddr'); if(setAddr) setAddr.value = data.address || "";
+                let setTerms = document.getElementById('setting-terms'); if(setTerms) setTerms.value = data.terms || "";
+                
+                // KOD PEMBAIKAN: Tarik data bank dari Cloud, simpan ke array, dan PAPARKAN!
+                window.companyBanks = data.bankAccounts || [];
+                if(window.renderCompanyBanks) window.renderCompanyBanks(); // Paksa dia lukis balik kotak tu
+                
+                let setLogo = document.getElementById('setting-logo-preview'); if(setLogo && data.logo) setLogo.src = data.logo;
+                let setSize = document.getElementById('setting-logoSize'); if(setSize && data.logoHeight) setSize.value = data.logoHeight;
+                
+                if(window.adjustSettingLogo) window.adjustSettingLogo();
+
+                // Simpan ke memori browser untuk ar.html baca
+                localStorage.setItem('sys_companyDefaults', JSON.stringify(data));
+            }
+        } catch (error) {
+            console.error("Gagal memuat turun profil syarikat:", error);
+        }
+    };
+
+    // --- ENJIN MULTI-BANK ---
+    window.companyBanks = []; 
+
+    document.getElementById('new-bank-name').addEventListener('change', function() {
+        let customInput = document.getElementById('custom-bank-input');
+        if(this.value === 'LAIN-LAIN') { customInput.style.display = 'block'; }
+        else { customInput.style.display = 'none'; }
+    });
+
+    window.addCompanyBank = function() {
+        let bankDropdown = document.getElementById('new-bank-name').value;
+        let bankName = bankDropdown === 'LAIN-LAIN' ? document.getElementById('new-bank-custom').value.trim().toUpperCase() : bankDropdown;
+        let bankAc = document.getElementById('new-bank-ac').value.trim();
+        let bankHolder = document.getElementById('new-bank-holder').value.trim().toUpperCase();
+
+        if(!bankName || !bankAc || !bankHolder) return alert("Sila lengkapkan Nama Bank, Account Name, dan No. Akaun!");
+        
+        window.companyBanks.push({ name: bankName, ac: bankAc, holder: bankHolder });
+        
+        document.getElementById('new-bank-name').value = "";
+        document.getElementById('new-bank-custom').value = "";
+        document.getElementById('new-bank-ac').value = "";
+        document.getElementById('new-bank-holder').value = "";
+        document.getElementById('custom-bank-input').style.display = 'none';
+        
+        window.renderCompanyBanks();
+    };
+
+    window.removeCompanyBank = function(index) {
+        window.companyBanks.splice(index, 1);
+        window.renderCompanyBanks();
+    };
+
+    window.renderCompanyBanks = function() {
+        let html = "";
+        window.companyBanks.forEach((b, index) => {
+            html += `<div style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid #eee; font-size:13px; align-items:center;">
+                <div>
+                    <strong style="color:#2980b9;">${b.name}</strong> - <span style="color:#2c3e50; font-weight:700;">${b.ac}</span><br>
+                    <small style="color:#555;">Account Name: <b>${b.holder || '-'}</b></small>
+                </div>
+                <button class="btn btn-remove" style="background:#e74c3c;" onclick="removeCompanyBank(${index})">Padam</button>
+            </div>`;
+        });
+        document.getElementById('company-bank-list').innerHTML = html === "" ? "<div style='color:#999; font-size:11px; text-align:center; padding:10px;'>Tiada akaun bank ditambah.</div>" : html;
+    };
+
+    // ==========================================
+    // --- 6. FUNGSI DATABASE PENGGUNA (FIRESTORE) ---
+    // ==========================================
+    window.saveDBClient = async function() {
+        let name = document.getElementById('db-c-name').value.toUpperCase(); let addr = document.getElementById('db-c-addr').value;
+        if(!name) return alert("Sila masukkan nama pelanggan.");
+        await addDoc(collection(window.db, "companies", window.currentCompanyId, "clients"), { name: name, addr: addr, created_at: Date.now() });
+        document.getElementById('db-c-name').value = ''; document.getElementById('db-c-addr').value = '';
+        alert("Pelanggan Berjaya Disimpan di Cloud!"); window.loadDatabase(); 
+    };
+    
+    window.saveDBSupplier = async function() {
+        let name = document.getElementById('db-s-name').value.toUpperCase(); let addr = document.getElementById('db-s-addr').value;
+        if(!name) return alert("Sila masukkan nama pembekal.");
+        await addDoc(collection(window.db, "companies", window.currentCompanyId, "suppliers"), { name: name, addr: addr, created_at: Date.now() });
+        document.getElementById('db-s-name').value = ''; document.getElementById('db-s-addr').value = '';
+        alert("Pembekal Berjaya Disimpan di Cloud!"); window.loadDatabase(); 
+    };
+    
+    window.saveDBItem = async function() {
+        let name = document.getElementById('db-i-name').value.toUpperCase(); let price = document.getElementById('db-i-price').value || 0;
+        if(!name) return alert("Sila masukkan nama barangan/servis.");
+        await addDoc(collection(window.db, "companies", window.currentCompanyId, "items"), { name: name, price: parseFloat(price), created_at: Date.now() });
+        document.getElementById('db-i-name').value = ''; document.getElementById('db-i-price').value = '';
+        alert("Item Berjaya Disimpan di Cloud!"); window.loadDatabase(); 
+    };
+
+    window.saveDBAccountCode = async function() {
+        let acNo = document.getElementById('db-ac-code').value.trim(); let acName = document.getElementById('db-ac-name').value.trim().toUpperCase();
+        if(!acNo || !acName) return alert("Sila masukkan Kod A/C dan Nama A/C penuh!");
+        await setDoc(doc(window.db, "companies", window.currentCompanyId, "accounts", acNo), { acNo: acNo, acName: acName, created_at: Date.now() });
+        document.getElementById('db-ac-code').value = ''; document.getElementById('db-ac-name').value = '';
+        alert("Kod Akaun Berjaya Disimpan di Cloud!"); window.loadDatabase(); 
+    };
+
+    window.loadDatabase = async function() {
+        if (!window.currentCompanyId) return;
+
+        const clientsSnap = await getDocs(collection(window.db, "companies", window.currentCompanyId, "clients"));
+        let clientsHtml = "";
+        clientsSnap.forEach(doc => { clientsHtml += `<div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px dashed #ccc;"><div><strong>${doc.data().name}</strong><br><small style="color:#777;">${doc.data().addr}</small></div> <button class="btn btn-remove" onclick="delDBDoc('clients', '${doc.id}')">Padam</button></div>`; });
+        document.getElementById('list-db-clients').innerHTML = clientsHtml;
+
+        const suppliersSnap = await getDocs(collection(window.db, "companies", window.currentCompanyId, "suppliers"));
+        let suppliersHtml = "";
+        suppliersSnap.forEach(doc => { suppliersHtml += `<div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px dashed #ccc;"><div><strong>${doc.data().name}</strong><br><small style="color:#777;">${doc.data().addr}</small></div> <button class="btn btn-remove" onclick="delDBDoc('suppliers', '${doc.id}')">Padam</button></div>`; });
+        document.getElementById('list-db-suppliers').innerHTML = suppliersHtml;
+
+        const itemsSnap = await getDocs(collection(window.db, "companies", window.currentCompanyId, "items"));
+        let itemsHtml = "";
+        itemsSnap.forEach(doc => { itemsHtml += `<div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px dashed #ccc;"><div><strong>${doc.data().name}</strong><br><small style="color:#777;">RM ${parseFloat(doc.data().price).toFixed(2)}</small></div> <button class="btn btn-remove" onclick="delDBDoc('items', '${doc.id}')">Padam</button></div>`; });
+        document.getElementById('list-db-items').innerHTML = itemsHtml;
+
+        const accountsSnap = await getDocs(collection(window.db, "companies", window.currentCompanyId, "accounts"));
+        let accountsHtml = "";
+        accountsSnap.forEach(doc => { accountsHtml += `<div style="display:flex; justify-content:space-between; align-items:center; padding:5px 0; border-bottom:1px dashed #ccc;"><div><span style="display:inline-block; width:50px; font-weight:bold; color:#8e44ad;">${doc.data().acNo}</span> <span>${doc.data().acName}</span></div> <button class="btn btn-remove" onclick="delDBDoc('accounts', '${doc.id}')">X</button></div>`; });
+        document.getElementById('list-db-accounts').innerHTML = accountsHtml;
+    };
+
+    window.delDBDoc = async function(collectionName, docId) {
+        if(confirm("Adakah anda pasti mahu memadam rekod ini secara kekal?")) {
+            await deleteDoc(doc(window.db, "companies", window.currentCompanyId, collectionName, docId));
+            window.loadDatabase();
+        }
+    };
+
+    // ==========================================
+    // --- 7. FUNGSI AUTOSET CHART OF ACCOUNTS ---
+    // ==========================================
+    window.autoSetDefaultAccounts = async function() {
+        if (!window.currentCompanyId) return alert("Sila log masuk dahulu.");
+        if (!confirm("This will auto-generate a standard English Chart of Accounts (COA) for your company. Continue?")) return;
+
+        let btn = document.getElementById('btnAutoSet');
+        let originalText = btn.innerText;
+        btn.disabled = true; btn.innerText = "GENERATING ACCOUNTS...";
+
+        const defaultAccounts = [
+            { no: "1001", name: "CASH IN HAND" }, { no: "1002", name: "CASH AT BANK" }, { no: "1200", name: "ACCOUNTS RECEIVABLE" }, { no: "1300", name: "INVENTORY" }, { no: "1500", name: "PROPERTY, PLANT & EQUIPMENT" },
+            { no: "2000", name: "ACCOUNTS PAYABLE" }, { no: "2100", name: "SHORT-TERM LOAN" }, { no: "2200", name: "LONG-TERM LOAN" }, { no: "2300", name: "TAX PAYABLE" },
+            { no: "3000", name: "OWNER'S CAPITAL" }, { no: "3100", name: "RETAINED EARNINGS" }, { no: "3200", name: "OWNER'S DRAWINGS" },
+            { no: "4000", name: "SALES REVENUE" }, { no: "4100", name: "SERVICE REVENUE" }, { no: "4200", name: "INTEREST INCOME" }, { no: "4900", name: "OTHER INCOME" },
+            { no: "5000", name: "COST OF GOODS SOLD (COGS)" }, { no: "5100", name: "PURCHASES" }, { no: "5200", name: "FREIGHT / CARRIAGE INWARDS" },
+            { no: "6001", name: "ADVERTISING & MARKETING" }, { no: "6002", name: "BANK CHARGES" }, { no: "6003", name: "DEPRECIATION EXPENSE" }, { no: "6004", name: "EPF, SOCSO & EIS" },
+            { no: "6005", name: "INSURANCE EXPENSE" }, { no: "6006", name: "MOTOR VEHICLE EXPENSES (FUEL/TOLL)" }, { no: "6007", name: "OFFICE SUPPLIES" }, { no: "6008", name: "PRINTING & STATIONERY" },
+            { no: "6009", name: "RENT EXPENSE" }, { no: "6010", name: "SALARIES & WAGES" }, { no: "6011", name: "TELEPHONE & INTERNET" }, { no: "6012", name: "TRAVELLING & ACCOMMODATION" },
+            { no: "6013", name: "UPKEEP OF OFFICE / PREMISES" }, { no: "6014", name: "UTILITIES (WATER & ELECTRICITY)" }, { no: "6015", name: "MISCELLANEOUS EXPENSES" }, { no: "6016", name: "DONATIONS & INFAQ" }
+        ];
+
+        try {
+            for (let ac of defaultAccounts) {
+                await setDoc(doc(window.db, "companies", window.currentCompanyId, "accounts", ac.no), { acNo: ac.no, acName: ac.name, created_at: Date.now() });
+            }
+            alert("Success! Standard Chart of Accounts has been generated.");
+            window.loadDatabase();
+        } catch (e) { alert("Error generating accounts: " + e.message); }
+        btn.disabled = false; btn.innerText = originalText;
+    };
+</script>
+
+<script>
+    // --- BYPASS RAW LOCAL STORAGE ---
+    const _originalSetItem = Storage.prototype.setItem;
+    const _originalGetItem = Storage.prototype.getItem;
+    
+    window._rawSet = function(k, v) { _originalSetItem.call(localStorage, k, v); };
+    window._rawGet = function(k) { return _originalGetItem.call(localStorage, k); };
+
+    const SECRET_KEY = "TigaLimaProPremium";
+    
+    function decryptData(data) {
+        try {
+            if(!data) return null;
+            if(data.startsWith("ENC2:")) return decodeURIComponent(atob(data.replace("ENC2:", "")));
+            if(data.startsWith("ENC:")) {
+                let raw = atob(data.replace("ENC:", "")); let xor = "";
+                for(let i=0; i<raw.length; i++) xor += String.fromCharCode(raw.charCodeAt(i) ^ SECRET_KEY.charCodeAt(i % SECRET_KEY.length));
+                return decodeURIComponent(escape(atob(xor)));
+            }
+            return data;
+        } catch(e) { return "[]"; }
+    }
+
+    function encryptData(data) {
+        try { return "ENC2:" + btoa(encodeURIComponent(data)); } catch(e) { return data; }
+    }
+
+    Storage.prototype.getItem = function(key) {
+        let val = window._rawGet(key);
+        if (!val) return val;
+        
+        if (typeof val === 'string' && (val.startsWith("ENC:") || val.startsWith("ENC2:"))) {
+            val = decryptData(val);
+            if(val !== "[]") window._rawSet(key, encryptData(val)); 
+        }
+        
+        if (key.includes('History') || key.includes('_db_') || key === 'sys_expenses') {
+            try { JSON.parse(val); } catch(e) { val = "[]"; window._rawSet(key, val); }
+        }
+        return val;
+    };
+
+    Storage.prototype.setItem = function(key, val) {
+        // HANYA ENCRYPT JIKA NAMA KEY BERMULA DENGAN 'sys_'
+        if (key.startsWith('sys_')) {
+            window._rawSet(key, encryptData(val));
+            if (key !== 'sys_lastUpdated') {
+                window._rawSet('sys_lastUpdated', Date.now().toString()); 
+                clearTimeout(window.syncTimer);
+                window.syncTimer = setTimeout(() => { if(window.forceSyncToFirebase) window.forceSyncToFirebase(); }, 1500);
+            }
+        } else {
+            // UNTUK DATA BIASA MACAM 'activeRole', SIMPAN MACAM BIASA
+            window._rawSet(key, val);
+        }
+    };
+
+    window.forceSyncToFirebase = async function() {
+        // Tukar dari currentUserUID kepada currentCompanyId
+        if(!window.currentCompanyId || !window.db) return; 
+        
+        let dataToSave = {};
+        for(let i=0; i<localStorage.length; i++) {
+            let key = localStorage.key(i);
+            if(key.startsWith('sys_')) { 
+                dataToSave[key] = window._rawGet(key); 
+            }
+        }
+        
+        try { 
+            // Tambah { merge: true } supaya data bergabung dengan selamat
+            await window.setDoc(window.doc(window.db, "companies", window.currentCompanyId, "system_backup", "local_data"), dataToSave, { merge: true }); 
+        } catch(e) {
+            console.error("Gagal sync ke awan:", e);
+        }
+    };
+
+    window.pullDataFromCloud = async function() {
+    if(!window.currentCompanyId || !window.db) return;
+
+        try {
+            // Tunjuk skrin loading supaya user tak tekan apa-apa masa data tengah muat turun
+            document.getElementById('loadingOverlay').style.display = 'flex';
+            
+            // Baca data dari Cloud (Syarikat)
+            const snap = await window.getDoc(window.doc(window.db, "companies", window.currentCompanyId, "system_backup", "local_data"));
+            
+            if (snap.exists()) {
+                let cloudData = snap.data();
+                
+                // Masukkan data awan ke dalam localStorage peranti ini
+                for (let key in cloudData) {
+                    window._rawSet(key, cloudData[key]); 
+                }
+            }
+            
+            document.getElementById('loadingOverlay').style.display = 'none';
+        } catch (error) {
+            console.error("Gagal muat turun data syarikat:", error);
+            document.getElementById('loadingOverlay').style.display = 'none';
+        }
+    };
+
+    // ==========================================
+    // --- LOGIN & INIT ---
+    // ==========================================
+
+
+
+    function logOutPremium() {
+        if(confirm("Log keluar dan bersihkan memori peranti?")) {
+            window.signOut(window.auth).then(() => { localStorage.clear(); window.location.reload(); });
+        }
+    }
+    
+    window.logOutPremium = logOutPremium;
+
+    window.initApp = function() {
+        loadCompanyDefaults(); 
+        loadDatabase(); 
+        loadCategories(); 
+        loadDashboard();
+  
+        let hash = window.location.hash.substring(1);
+        if(hash) switchSubTab(hash);
+
+    }
+
+
+    // ==========================================
+    // --- NAVIGASI SUB-TAB ---
+    // ==========================================
+    function switchSubTab(tabId) {
+        document.querySelectorAll('.sub-nav-item').forEach(el => el.classList.remove('active'));
+        if(event && event.target) {
+            event.target.classList.add('active');
+        } else {
+            let navBtn = document.querySelector(`.sub-nav-item[onclick="switchSubTab('${tabId}')"]`);
+            if(navBtn) navBtn.classList.add('active');
+        }
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        
+        let target = document.getElementById(tabId);
+        if(target) target.classList.add('active');
+        
+        if(tabId === 'tab-dashboard') loadDashboard();
+    }
+    
+    window.switchSubTab = switchSubTab;
+
+    // ==========================================
+    // --- FUNGSI DASHBOARD (PAPAN PEMUKA) ---
+    // ==========================================
+    function loadDashboard() {
+        let invHistory = JSON.parse(localStorage.getItem('sys_invoiceHistory') || "[]");
+        let expenses = JSON.parse(localStorage.getItem('sys_expenses') || "[]");
+        let bills = JSON.parse(localStorage.getItem('sys_billHistory') || "[]"); 
+        let cndns = JSON.parse(localStorage.getItem('sys_cnHistory') || "[]"); 
+
+        let totalSales = 0, totalAR = 0, totalAP = 0;
+        let totalCashIn = 0, totalCashOut = 0, currentBal = 0;
+
+        expenses.forEach(exp => {
+            let amt = parseFloat(exp.amount) || 0;
+            if(exp.flow === 'IN') {
+                currentBal += amt;
+                if(exp.category !== 'FUND TRANSFER') totalCashIn += amt;
+            } else {
+                currentBal -= amt;
+                if(exp.category !== 'FUND TRANSFER') totalCashOut += amt;
+            }
+        });
+
+        let clientsAR = {};
+        invHistory.forEach(inv => {
+            let invTotal = Math.max(0, (parseFloat(inv.total) || 0) - (parseFloat(inv.discount) || 0));
+            totalSales += invTotal;
+            let paid = 0; if (inv.payments) inv.payments.forEach(p => paid += parseFloat(p.amount) || 0);
+            let client = inv.custName || inv.cName;
+            if(!clientsAR[client]) clientsAR[client] = 0;
+            clientsAR[client] += (invTotal - paid);
+        });
+
+        cndns.forEach(cn => {
+            let amt = parseFloat(cn.total) || 0;
+            let client = cn.custName || cn.cName;
+            if(cn.id && cn.id.startsWith('CN-')) {
+                if(!clientsAR[client]) clientsAR[client] = 0;
+                clientsAR[client] -= amt;
+            }
+        });
+
+        let outHtml = "";
+        for(let client in clientsAR) {
+            let bal = clientsAR[client];
+            totalAR += bal; 
+            if(bal > 0) { 
+                outHtml += `<tr style="border-bottom: 1px solid #eee;"><td style="padding: 10px;"><strong>-</strong></td><td style="padding: 10px;">${client}</td><td style="padding: 10px; text-align:right; color:#d35400; font-weight:700;">${parseFloat(bal).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})}</td></tr>`;
+            }
+        }
+
+        let suppAP = {};
+        bills.forEach(bill => {
+            let billTotal = Math.max(0, (parseFloat(bill.total) || 0) - (parseFloat(bill.discount) || 0));
+            let paid = 0; if (bill.payments) bill.payments.forEach(p => paid += parseFloat(p.amount) || 0);
+            let supp = bill.custName || bill.cName;
+            if(!suppAP[supp]) suppAP[supp] = 0;
+            suppAP[supp] += (billTotal - paid);
+        });
+
+        cndns.forEach(cn => {
+            let amt = parseFloat(cn.total) || 0;
+            let supp = cn.custName || cn.cName;
+            if(cn.id && cn.id.startsWith('DN-')) {
+                if(!suppAP[supp]) suppAP[supp] = 0;
+                suppAP[supp] -= amt;
+            }
+        });
+
+        for(let supp in suppAP) { totalAP += suppAP[supp]; }
+
+        const fmt = (num) => parseFloat(num || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+        document.getElementById('dash-total-sales').innerText = fmt(totalSales);
+        document.getElementById('dash-outstanding').innerText = fmt(totalAR);
+        document.getElementById('dash-collected').innerText = fmt(totalCashIn);
+        document.getElementById('dash-ap-total').innerText = fmt(totalAP);
+        
+        document.getElementById('dash-income').innerText = fmt(totalCashIn);
+        document.getElementById('dash-expense').innerText = fmt(totalCashOut);
+
+        let profitEl = document.getElementById('dash-profit');
+        if (currentBal < 0) {
+            profitEl.innerText = "- RM " + fmt(Math.abs(currentBal));
+            profitEl.style.color = "#e74c3c";
+        } else {
+            profitEl.innerText = "RM " + fmt(currentBal);
+            profitEl.style.color = "#2ecc71";
+        }
+
+        let listEl = document.getElementById('dash-outstanding-list');
+        listEl.innerHTML = outHtml === "" ? `<tr><td colspan='3' style='text-align:center; padding:20px; color:#999;' data-i18n="msg_dash_no_ar">${dict[currentLang]['msg_dash_no_ar']}</td></tr>` : outHtml;
+    
+      // =====================================
+        // ENJIN LUKIS CARTA (CHART.JS) - KEMASKINI KALIS GAGAL
+        // =====================================
+        
+        function renderCharts() {
+            let ctxDonut = document.getElementById('cashflowDonut');
+            let ctxBar = document.getElementById('monthlyBarChart');
+
+            if (!ctxDonut || !ctxBar) return;
+
+            // Bersihkan canvas lama untuk elak graf bertindih
+            if(window.myDonutChart) window.myDonutChart.destroy();
+            if(window.myBarChart) window.myBarChart.destroy();
+
+            // --- CARTA DONUT ---
+            window.myDonutChart = new Chart(ctxDonut.getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Cash In', 'Expenses'],
+                    datasets: [{
+                        data: [totalCashIn, totalCashOut],
+                        backgroundColor: ['#2ecc71', '#e74c3c'],
+                        borderWidth: 0,
+                        hoverOffset: 4
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { display: false } } }
+            });
+
+            // --- CARTA BAR ---
+            let currentYear = new Date().getFullYear();
+            let monthlyIn = new Array(12).fill(0);
+            let monthlyOut = new Array(12).fill(0);
+
+            // Cari tahun terkini yang ada rekod secara automatik
+            let activeYears = expenses.map(e => new Date(e.date).getFullYear()).filter(y => !isNaN(y));
+            if (activeYears.length > 0) {
+                let maxYear = Math.max(...activeYears);
+                if (!activeYears.includes(currentYear)) currentYear = maxYear; 
+            }
+
+            // Masukkan data ke dalam bulan yang betul
+            expenses.forEach(exp => {
+                let d = new Date(exp.date);
+                if (!isNaN(d.getTime()) && d.getFullYear() === currentYear && exp.category !== 'FUND TRANSFER') {
+                    let m = d.getMonth(); 
+                    let amt = parseFloat(exp.amount) || 0;
+                    if (exp.flow === 'IN') monthlyIn[m] += amt;
+                    else monthlyOut[m] += amt;
+                }
+            });
+
+            window.myBarChart = new Chart(ctxBar.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                    datasets: [
+                        { label: 'Cash In (' + currentYear + ')', data: monthlyIn, backgroundColor: '#2ecc71', borderRadius: 4 },
+                        { label: 'Expenses (' + currentYear + ')', data: monthlyOut, backgroundColor: '#e74c3c', borderRadius: 4 }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true }, x: { grid: { display: false } } },
+                    plugins: { legend: { position: 'top', labels: { boxWidth: 12, font: {size: 11} } } }
+                }
+            });
+        }
+
+        // Semak enjin Chart.js. Kalau disekat/gagal, kita paksa download guna link backup.
+        if (typeof Chart === 'undefined') {
+            console.warn("Chart.js gagal dikesan. Memuat turun secara alternatif...");
+            let script = document.createElement('script');
+            script.src = "https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js";
+            script.onload = () => { setTimeout(renderCharts, 300); };
+            document.head.appendChild(script);
+        } else {
+            // Delay 300ms untuk pastikan kotak HTML kembang sepenuhnya sebelum graf dilukis
+            setTimeout(renderCharts, 300);
+        }
+    
+    }
+
+    // ==========================================
+    // --- FUNGSI TETAPAN (SETTINGS) ---
+    // ==========================================
+    function previewSettingLogo(input) {
+        if (input.files && input.files[0]) {
+            const file = input.files[0];
+            if (file.size > 102400) { alert("Ralat: Saiz logo melebihi 100KB!"); input.value = ""; return; }
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas'); let w = img.width, h = img.height;
+                    if (w > 400) { h *= 400 / w; w = 400; }
+                    canvas.width = w; canvas.height = h;
+                    const ctx = canvas.getContext('2d');
+                    ctx.fillStyle = "#FFFFFF"; ctx.fillRect(0, 0, w, h); ctx.drawImage(img, 0, 0, w, h);
+                    document.getElementById('setting-logo-preview').src = canvas.toDataURL('image/jpeg', 0.7);
+                    adjustSettingLogo();
+                }; img.src = e.target.result;
+            }; reader.readAsDataURL(file);
+        }
+    }
+    
+    function adjustSettingLogo() {
+        const size = document.getElementById('setting-logoSize').value;
+        const logo = document.getElementById('setting-logo-preview');
+        if(logo) logo.style.height = size + 'px';
+    }
+   
+    window.previewSettingLogo = previewSettingLogo;
+    window.adjustSettingLogo = adjustSettingLogo;
+
+    function loadCategories() {
+        let defaultCats = ["BELIAN STOK", "GAJI & ELAUN", "BIL & UTILITI", "SEWA PREMIS", "MARKETING", "KOS OPERASI", "LAIN-LAIN"];
+        let cats = JSON.parse(localStorage.getItem('sys_expense_categories')) || defaultCats;
+        document.getElementById('list-categories').innerHTML = cats.map((c, i) => `<div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px dashed #ccc; font-size:13px; font-weight:700;"><span>${c}</span> <button class="btn btn-remove" onclick="deleteCategory(${i})">Padam</button></div>`).join('');
+    }
+
+    function addCategory() {
+        let newCat = document.getElementById('new-category-input').value.trim().toUpperCase();
+        if(!newCat) return alert("Sila masukkan nama kategori!");
+        let cats = JSON.parse(localStorage.getItem('sys_expense_categories')) || ["BELIAN STOK", "GAJI & ELAUN", "BIL & UTILITI", "SEWA PREMIS", "MARKETING", "KOS OPERASI", "LAIN-LAIN"];
+        if(cats.includes(newCat)) return alert("Kategori ini sudah wujud!");
+        cats.push(newCat); localStorage.setItem('sys_expense_categories', JSON.stringify(cats));
+        document.getElementById('new-category-input').value = ""; loadCategories(); 
+    }
+
+    function deleteCategory(index) {
+        if(confirm("Padam kategori ini?")) {
+            let cats = JSON.parse(localStorage.getItem('sys_expense_categories')) || [];
+            cats.splice(index, 1); localStorage.setItem('sys_expense_categories', JSON.stringify(cats)); loadCategories(); 
+        }
+    }
+    
+    window.addCategory = addCategory; window.deleteCategory = deleteCategory;
+
+    function exportDataPremium() {
+        let dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(localStorage));
+        let downloadAnchorNode = document.createElement('a');
+        downloadAnchorNode.setAttribute("href", dataStr);
+        downloadAnchorNode.setAttribute("download", "Backup_TigaLima_" + new Date().toLocaleDateString('ms-MY').replace(/\//g,'-') + ".json");
+        document.body.appendChild(downloadAnchorNode); downloadAnchorNode.click(); downloadAnchorNode.remove();
+    }
+
+    function importDataPremium(event) {
+        const file = event.target.files[0]; if(!file) return;
+        const reader = new FileReader();
+        reader.onload = async function(e) {
+            try {
+                const contents = e.target.result; const data = JSON.parse(contents);
+                for (let key in data) { localStorage.setItem(key, data[key]); }
+                await forceSyncToFirebase(); alert("Data berjaya di-restore dan disegerakkan ke Cloud!"); window.location.reload();
+            } catch(e) { alert("Gagal memuat naik data. Format fail mungkin salah."); }
+        }; reader.readAsText(file);
+    }
+    
+    window.exportDataPremium = exportDataPremium; window.importDataPremium = importDataPremium;
+
+    window.factoryReset = async function() {
+        let confirm1 = prompt("⚠️ AMARAN KERAS: Adakah anda pasti mahu memadam SEMUA DATA sistem ini secara kekal?\n\nSemua data Klien, Invois, Resit, dan Cashbook akan dihapuskan.\n\nSila taip 'PADAM' di bawah untuk sahkan:");
+        if (confirm1 === "PADAM") {
+            if (confirm("🚨 PENGESAHAN TERAKHIR: Data yang dipadam dari pangkalan data dan Cloud ini tidak boleh dikembalikan. Teruskan?")) {
+                document.getElementById('loadingOverlay').style.display = 'flex';
+                document.getElementById('loadingOverlay').innerHTML = "<div style='font-size:30px; margin-bottom:10px;'>🗑️</div><div>Memadam semua data...</div>";
+                for(let i = localStorage.length - 1; i >= 0; i--) { let key = localStorage.key(i); if(key.startsWith('sys_')) { localStorage.removeItem(key); } }
+                if(window.currentUserUID && window.db) { try { let emptyData = { sys_lastUpdated: Date.now().toString() }; await window.setDoc(window.doc(window.db, "tigalima_users", window.currentUserUID), emptyData); } catch(e) {} }
+                alert("Sistem telah dikosongkan. Kembali ke tetapan asal kilang."); window.location.reload();
+            }
+        }
+    };
+
+window.companyBanks = []; 
+
+    document.getElementById('new-bank-name').addEventListener('change', function() {
+        let customInput = document.getElementById('custom-bank-input');
+        if(this.value === 'LAIN-LAIN') { customInput.style.display = 'block'; }
+        else { customInput.style.display = 'none'; }
+    });
+
+    window.addCompanyBank = function() {
+        let bankDropdown = document.getElementById('new-bank-name').value;
+        let bankName = bankDropdown === 'LAIN-LAIN' ? document.getElementById('new-bank-custom').value.trim().toUpperCase() : bankDropdown;
+        let bankAc = document.getElementById('new-bank-ac').value.trim();
+        let bankHolder = document.getElementById('new-bank-holder').value.trim().toUpperCase();
+
+        // KOD BARU: Pastikan ketiga-tiga maklumat diisi
+        if(!bankName || !bankAc || !bankHolder) return alert("Sila lengkapkan Nama Bank, Pemegang Akaun, dan No. Akaun!");
+        
+        // Simpan 3 elemen ke dalam array
+        window.companyBanks.push({ name: bankName, ac: bankAc, holder: bankHolder });
+        
+        // Reset kotak input
+        document.getElementById('new-bank-name').value = "";
+        document.getElementById('new-bank-custom').value = "";
+        document.getElementById('new-bank-ac').value = "";
+        document.getElementById('new-bank-holder').value = "";
+        document.getElementById('custom-bank-input').style.display = 'none';
+        
+        renderCompanyBanks();
+    };
+
+    window.removeCompanyBank = function(index) {
+        window.companyBanks.splice(index, 1);
+        renderCompanyBanks();
+    };
+
+    window.renderCompanyBanks = function() {
+        let html = "";
+        window.companyBanks.forEach((b, index) => {
+            // KOD BARU: Paparkan Nama Pemegang Akaun di dalam jadual (UI)
+            html += `<div style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid #eee; font-size:13px; align-items:center;">
+                <div>
+                    <strong style="color:#2980b9;">${b.name}</strong> - <span style="color:#2c3e50; font-weight:700;">${b.ac}</span><br>
+                    <small style="color:#555;">Pemegang: <b>${b.holder || '-'}</b></small>
+                </div>
+                <button class="btn btn-remove" style="background:#e74c3c;" onclick="removeCompanyBank(${index})">Padam</button>
+            </div>`;
+        });
+        document.getElementById('company-bank-list').innerHTML = html === "" ? "<div style='color:#999; font-size:11px; text-align:center; padding:10px;'>Tiada akaun bank ditambah.</div>" : html;
+    };
+</script>
+</body>
+</html>

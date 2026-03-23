@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Kewangan 313 - Accounts & Audit (GL)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --text-main: #000000; --text-muted: #111111;
+            --accent: #e74c3c; --bg-body: #f4f6f8; --nav-bg: #2c3e50;
+            --primary: #2c3e50; --success: #27ae60; --warning: #f39c12;
+        }
+
+        body { font-family: 'Montserrat', sans-serif; margin: 0; padding: 0; background: var(--bg-body); color: var(--text-main); }
+        
+        /* NAVBAR */
+        .navbar { background: var(--nav-bg); padding: 0 20px; display: flex; align-items: center; overflow-x: auto; white-space: nowrap; box-shadow: 0 4px 10px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 1000;}
+        .nav-brand { color: white; font-weight: 800; font-size: 18px; margin-right: 30px; padding: 15px 0; letter-spacing: 1px;}
+        .nav-brand span { color: var(--warning); }
+        .nav-item { color: #bdc3c7; font-weight: 600; font-size: 13px; padding: 18px 15px; cursor: pointer; transition: 0.3s; border-bottom: 3px solid transparent; text-decoration: none; display: inline-block;}
+        .nav-item:hover { color: white; }
+        .nav-item.active { color: white; border-bottom-color: var(--warning); background: rgba(255,255,255,0.05); }
+
+        .gl-container { display: flex; gap: 20px; padding: 20px; max-width: 1400px; margin: 0 auto; }
+        .gl-sidebar { flex: 1; min-width: 250px; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); height: max-content; position: sticky; top: 80px;}
+        .gl-content { flex: 3; min-width: 400px; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); min-height: 80vh;}
+        
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-size: 12px; font-weight: 700; color: #555; margin-bottom: 5px; }
+        .form-control { width: 100%; padding: 10px; border: 2px solid #eee; border-radius: 6px; font-family: 'Montserrat'; font-size: 13px; box-sizing: border-box; transition: 0.3s;}
+        .form-control:focus { border-color: var(--primary); outline: none; }
+        
+        .btn { padding: 12px 20px; border-radius: 6px; border: none; cursor: pointer; font-family: 'Montserrat'; font-weight: 700; font-size: 13px; transition: 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; margin-bottom: 10px;}
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-success { background: var(--success); color: white; }
+        .btn-outline { background: transparent; border: 2px solid #ddd; color: #555; }
+        .btn-outline:hover { background: #eee; }
+        .btn-active { background: var(--primary); color: white; border: none;}
+
+        /* REPORT STYLES (MIMICS AUDITOR FORMAT) */
+        .report-header { text-align: center; margin-bottom: 20px; font-family: Arial, sans-serif; }
+        .report-header h1 { margin: 0 0 5px 0; font-size: 18px; text-transform: uppercase; }
+        .report-header h2 { margin: 0 0 5px 0; font-size: 14px; color: #333; }
+        .report-header p { margin: 0; font-size: 11px; color: #666; }
+
+        table.report-table { width: 100%; border-collapse: collapse; font-family: Arial, sans-serif; font-size: 12px; line-height: 2; }
+        table.report-table th, table.report-table td { padding: 2px 4px; border: none; }
+        table.report-table td.money { text-align: right; width: 20%; }
+        table.report-table td.indent { padding-left: 20px; }
+        
+        /* Accounting Underlines & Spacing */
+        .line-top { border-top: 1px solid #000 !important; }
+        .line-bottom { border-bottom: 1px solid #000 !important; }
+        .line-double { border-bottom: 3px double #000 !important; border-top: 1px solid #000 !important; font-weight: bold; }
+        .total-row { font-weight: bold; }
+        .spacer-row td { height: 12px; padding: 0; } /* Kawalan ketat untuk baris kosong */
+
+        @media print {
+            @page { margin: 1.5cm; }
+            body { background: white; padding: 0; margin: 0; }
+            .navbar, .gl-sidebar, .no-print { display: none !important; }
+            .gl-container { padding: 0; display: block; max-width: 100%; }
+            .gl-content { box-shadow: none; padding: 0; border: none; }
+            table.report-table { font-size: 12px; }
+        }
+
+        @media screen and (max-width: 768px) {
+            .gl-container { flex-direction: column; }
+            .gl-sidebar { position: static; }
+        }
+        
+
+    </style>
+</head>
+<body>
+
+<div class="navbar no-print">
+    <div class="nav-brand">Sistem<span> Kewangan 313</span></div>
+    <a href="index.html" class="nav-item">🏠 Dashboard & Settings</a>
+    <a href="ar.html" class="nav-item">👥 Receivables (A/R)</a>
+    <a href="ap.html" class="nav-item">🏭 Payables (A/P)</a>
+    <a href="cashbook.html" class="nav-item">📘 Cashbook & Bank</a>
+    <a href="gl.html" class="nav-item active">📊 Accounts & Audit (GL)</a>
+</div>
+
+
+
+<div class="gl-container">
+    <div class="gl-sidebar no-print">
+        <h3 style="margin-top:0; color:var(--nav-bg); border-bottom:2px solid #eee; padding-bottom:10px;">📊 Financial Reports</h3>
+        
+        <button class="btn btn-active" id="btn-pnl" onclick="switchReport('PNL')">📈 Profit & Loss (P&L)</button>
+        <button class="btn btn-outline" id="btn-bs" onclick="switchReport('BS')">⚖️ Balance Sheet</button>
+
+        <div style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px;">
+            <div class="form-group">
+                <label>Filter Year</label>
+                <select id="f-year" class="form-control" onchange="generateReport()"></select>
+            </div>
+            <div class="form-group">
+                <label>Filter Month</label>
+                <select id="f-month" class="form-control" onchange="generateReport()">
+                    <option value="ALL">Full Year (Cumulative)</option>
+                    <option value="1">January</option><option value="2">February</option><option value="3">March</option>
+                    <option value="4">April</option><option value="5">May</option><option value="6">June</option>
+                    <option value="7">July</option><option value="8">August</option><option value="9">September</option>
+                    <option value="10">October</option><option value="11">November</option><option value="12">December</option>
+                </select>
+            </div>
+            
+            <button class="btn btn-success" style="margin-top: 10px;" onclick="window.print()">🖨️ Print Report</button>
+        </div>
+    </div>
+
+    <div class="gl-content">
+        <div id="view-pnl">
+            <div class="report-header">
+                <h1 id="pnl-co-name">COMPANY NAME</h1>
+                <h2>STATEMENT OF PROFIT OR LOSS</h2>
+                <p id="pnl-period">For the period ended: </p>
+            </div>
+            
+            <table class="report-table">
+                <tbody id="pnl-body">
+                    </tbody>
+            </table>
+        </div>
+
+        <div id="view-bs" style="display:none;">
+            <div class="report-header">
+                <h1 id="bs-co-name">COMPANY NAME</h1>
+                <h2>STATEMENT OF FINANCIAL POSITION (BALANCE SHEET)</h2>
+                <p id="bs-period">As at: </p>
+            </div>
+            
+            <table class="report-table">
+                <tbody id="bs-body">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+    apiKey: "AIzaSyCjJab1uItHC62ZfZVD5nMtZZtm76fc46Y",
+    authDomain: "sistem313-8bba4.firebaseapp.com",
+    projectId: "sistem313-8bba4",
+    storageBucket: "sistem313-8bba4.firebasestorage.app",
+    messagingSenderId: "613290008986",
+    appId: "1:613290008986:web:a16e7141ab8f0e5dd89a23"
+    };
+    
+    const app = initializeApp(firebaseConfig);
+    window.auth = getAuth(app); window.db = getFirestore(app); window.setDoc = setDoc; window.getDoc = getDoc; window.doc = doc;
+
+    onAuthStateChanged(window.auth, async (user) => {
+        if (user) { 
+            window.currentUserUID = user.uid; 
+            try {
+                // Tarik role dan company_id dari database pengguna
+                const userDoc = await getDoc(doc(window.db, "users", user.uid));
+                if(userDoc.exists()) {
+                    let userData = userDoc.data();
+                    window.currentCompanyId = userData.company_id; 
+                    
+                    if (userData.role === 'staff') { document.body.classList.add('role-staff'); } 
+                    else { document.body.classList.remove('role-staff'); }
+
+                    // Paksa muat turun data dari Cloud (jika ada)
+                    if(window.pullDataFromCloud) await window.pullDataFromCloud();
+                    
+                    // Lancarkan sistem
+                    initApp(); 
+                }
+            } catch(error) { console.error("Ralat log masuk:", error); }
+        } 
+        else { window.location.href = 'index.html'; }
+    });
+</script>
+
+<script>
+    // --- BYPASS RAW LOCAL STORAGE ---
+    const originalSetItem = Storage.prototype.setItem;
+    const originalGetItem = Storage.prototype.getItem;
+    window._rawSet = function(k, v) { originalSetItem.call(localStorage, k, v); };
+    window._rawGet = function(k) { return originalGetItem.call(localStorage, k); };
+    const SECRET_KEY = "TigaLimaProPremium";
+    
+    function decryptData(data) {
+        try {
+            if(!data) return null;
+            if(data.startsWith("ENC2:")) return decodeURIComponent(atob(data.replace("ENC2:", "")));
+            if(data.startsWith("ENC:")) {
+                let raw = atob(data.replace("ENC:", "")); let xor = "";
+                for(let i=0; i<raw.length; i++) xor += String.fromCharCode(raw.charCodeAt(i) ^ SECRET_KEY.charCodeAt(i % SECRET_KEY.length));
+                return decodeURIComponent(escape(atob(xor)));
+            }
+            return data;
+        } catch(e) { return "[]"; }
+    }
+
+    function encryptData(data) { try { return "ENC2:" + btoa(encodeURIComponent(data)); } catch(e) { return data; } }
+
+    Storage.prototype.getItem = function(key) {
+        let val = window._rawGet(key);
+        if (!val) return val;
+        if (typeof val === 'string' && (val.startsWith("ENC:") || val.startsWith("ENC2:"))) {
+            val = decryptData(val);
+            if(val !== "[]") window._rawSet(key, encryptData(val)); 
+        }
+        if (key.includes('History') || key.includes('_db_') || key === 'sys_expenses') {
+            try { JSON.parse(val); } catch(e) { val = "[]"; window._rawSet(key, val); }
+        }
+        return val;
+    };
+
+    Storage.prototype.setItem = function(key, val) {
+        window._rawSet(key, encryptData(val));
+        if(key.startsWith('sys_') && key !== 'sys_lastUpdated') {
+            window._rawSet('sys_lastUpdated', Date.now().toString()); 
+            clearTimeout(window.syncTimer);
+            window.syncTimer = setTimeout(() => { if(window.forceSyncToFirebase) window.forceSyncToFirebase(); }, 1500);
+        }
+    };
+
+    window.forceSyncToFirebase = async function() {
+        if(!window.currentCompanyId || !window.db) return;
+        let dataToSave = {};
+        for(let i=0; i<localStorage.length; i++) {
+            let key = localStorage.key(i);
+            if(key.startsWith('sys_')) { dataToSave[key] = window._rawGet(key); }
+        }
+        try { await window.setDoc(window.doc(window.db, "companies", window.currentCompanyId, "system_backup", "local_data"), dataToSave, { merge: true }); } catch(e) {}
+    };
+
+    window.pullDataFromCloud = async function() {
+        if(!window.currentCompanyId || !window.db) return;
+        try {
+            const snap = await window.getDoc(window.doc(window.db, "companies", window.currentCompanyId, "system_backup", "local_data"));
+            if (snap.exists()) {
+                let cloudData = snap.data();
+                let cloudTs = parseInt(cloudData['sys_lastUpdated'] || "0");
+                let localTs = parseInt(window._rawGet('sys_lastUpdated') || "0");
+
+                if (cloudTs > localTs) {
+                    for (let key in cloudData) { window._rawSet(key, cloudData[key]); }
+                } else if (localTs > cloudTs) {
+                    if (window.forceSyncToFirebase) window.forceSyncToFirebase();
+                }
+            }
+        } catch (error) { console.error("Gagal muat turun data syarikat:", error); }
+    };
+
+   // ==========================================
+    // --- GL ENGINE & REPORT GENERATOR (V3 - ACCOUNTING CODES) ---
+    // ==========================================
+
+    let currentReport = 'PNL';
+
+    window.initApp = function() {
+        let def = JSON.parse(localStorage.getItem('sys_companyDefaults')) || {};
+        document.getElementById('pnl-co-name').innerText = def.name || 'COMPANY NAME';
+        document.getElementById('bs-co-name').innerText = def.name || 'COMPANY NAME';
+
+        let currYear = new Date().getFullYear();
+        let yrSelect = document.getElementById('f-year');
+        yrSelect.innerHTML = `<option value="${currYear-1}">${currYear-1}</option><option value="${currYear}" selected>${currYear}</option><option value="${currYear+1}">${currYear+1}</option>`;
+        
+        generateReport();
+        
+    };
+
+    window.switchReport = function(type) {
+        currentReport = type;
+        if(type === 'PNL') {
+            document.getElementById('btn-pnl').className = 'btn btn-active';
+            document.getElementById('btn-bs').className = 'btn btn-outline';
+            document.getElementById('view-pnl').style.display = 'block';
+            document.getElementById('view-bs').style.display = 'none';
+        } else {
+            document.getElementById('btn-bs').className = 'btn btn-active';
+            document.getElementById('btn-pnl').className = 'btn btn-outline';
+            document.getElementById('view-bs').style.display = 'block';
+            document.getElementById('view-pnl').style.display = 'none';
+        }
+        generateReport();
+    };
+
+    function filterByDate(dateStr, fYear, fMonth) {
+        let d = new Date(dateStr);
+        if(isNaN(d.getTime())) return false;
+        if(fMonth === 'ALL') return d.getFullYear().toString() === fYear;
+        return d.getFullYear().toString() === fYear && (d.getMonth() + 1).toString() === fMonth;
+    }
+
+    // Helper Pengecaman Kategori Automatik
+        function isSystemCat(cat) {
+        if(!cat) return false;
+        let u = cat.toUpperCase();
+        return u === "SALES (A/R)" || u === "JUALAN (A/R)" || 
+               u === "PURCHASES (A/P)" || u === "BELIAN (A/P)" || 
+               u === "FUND TRANSFER";
+    }
+
+    function isCapital(cat, ac) {
+        if(!cat) return false;
+        let u = cat.toUpperCase();
+        return u.includes('EQUITY') || u.includes('MODAL') || (ac >= 3000 && ac <= 3999);
+    }
+
+    // Helper Pengecaman Kategori Automatik
+    function isSystemCat(cat) {
+        if(!cat) return false;
+        let u = cat.toUpperCase();
+        return u === "SALES (A/R)" || u === "JUALAN (A/R)" || 
+               u === "PURCHASES (A/P)" || u === "BELIAN (A/P)" || 
+               u === "FUND TRANSFER";
+    }
+
+    function isCapital(cat, ac) {
+        if(!cat) return false;
+        let u = cat.toUpperCase();
+        return u.includes('EQUITY') || u.includes('MODAL') || (ac >= 3000 && ac <= 3999);
+    }
+
+    window.generateReport = function() {
+        let fYear = document.getElementById('f-year').value;
+        let fMonth = document.getElementById('f-month').value;
+        
+        let monthName = fMonth === 'ALL' ? 'Dec' : new Date(fYear, parseInt(fMonth)-1, 1).toLocaleString('en-US', { month: 'long' });
+        let periodStr = fMonth === 'ALL' ? `31 Dec ${fYear}` : `End of ${monthName} ${fYear}`;
+        
+        document.getElementById('pnl-period').innerText = "For the period ended: " + periodStr;
+        document.getElementById('bs-period').innerText = "As at: " + periodStr;
+
+        let expensesRaw = JSON.parse(localStorage.getItem('sys_expenses') || "[]");
+        let invs = JSON.parse(localStorage.getItem('sys_invoiceHistory') || "[]"); 
+        let bills = JSON.parse(localStorage.getItem('sys_billHistory') || "[]");
+        let cndns = JSON.parse(localStorage.getItem('sys_cnHistory') || "[]");
+        
+        // Data rujuk silang untuk CNDN
+        let clients = JSON.parse(localStorage.getItem('sys_db_clients') || "[]");
+        let suppliers = JSON.parse(localStorage.getItem('sys_db_suppliers') || "[]");
+
+        let filterDate = fMonth === 'ALL' ? new Date(fYear, 11, 31, 23, 59, 59) : new Date(fYear, fMonth, 0, 23, 59, 59);
+
+        function getAcNo(categoryStr) {
+            if (!categoryStr) return 0;
+            let match = categoryStr.match(/^\d+/);
+            return match ? parseInt(match[0]) : 0;
+        }
+
+        // ==========================================
+        // 1. PEMBOLEHUBAH (VARIABLES)
+        // ==========================================
+        // P&L
+        let totalSales = 0, totalCOGS = 0, otherIncome = 0, totalExp = 0;
+        let opexDict = {}; let cogsDict = {};
+        
+        // BS
+        let bankBal = 0, cashBal = 0, totalAR = 0, totalAP = 0, totalCapital = 0, fixedAssets = 0;
+        let cumSales = 0, cumCOGS = 0, cumOtherIn = 0, cumExp = 0;
+
+        // ==========================================
+        // 2. KIRAAN INVOIS (A/R)
+        // ==========================================
+        invs.forEach(inv => { 
+            let invTot = Math.max(0, (parseFloat(inv.total)||0) - (parseFloat(inv.discount)||0));
+            
+            // P&L
+            if(filterByDate(inv.date, fYear, fMonth)) { totalSales += invTot; }
+            
+            // BS Cumulative
+            if(new Date(inv.date).getTime() <= filterDate.getTime()) {
+                cumSales += invTot;
+                let paid = 0; 
+                if(inv.payments) inv.payments.forEach(p => { 
+                    if(new Date(p.date).getTime() <= filterDate.getTime()) paid += parseFloat(p.amount)||0; 
+                });
+                totalAR += (invTot - paid);
+            }
+        });
+
+        // ==========================================
+        // 3. KIRAAN BIL PEMBEKAL (A/P)
+        // ==========================================
+        bills.forEach(b => {
+            let bDisc = parseFloat(b.discount) || 0;
+            let billTot = Math.max(0, (parseFloat(b.total)||0) - bDisc);
+            
+            let pnlMatch = filterByDate(b.date, fYear, fMonth);
+            let bsMatch = new Date(b.date).getTime() <= filterDate.getTime();
+
+            if(pnlMatch || bsMatch) {
+                if(b.items && b.items.length > 0) {
+                    b.items.forEach(item => {
+                        let ac = getAcNo(item.acNo || item.desc);
+                        let amt = (parseFloat(item.qty)||1) * (parseFloat(item.price)||0);
+                        
+                        if (ac >= 1000 && ac <= 1999) { 
+                            if (bsMatch) fixedAssets += amt; 
+                        }
+                        else if (ac >= 5000 && ac <= 5999) {
+                            if (pnlMatch) {
+                                totalCOGS += amt;
+                                let label = (item.acNo ? item.acNo + " - " : "") + (item.acName || item.desc);
+                                cogsDict[label] = (cogsDict[label] || 0) + amt;
+                            }
+                            if (bsMatch) cumCOGS += amt;
+                        } 
+                        else {
+                            if (pnlMatch) {
+                                totalExp += amt;
+                                let label = (item.acNo ? item.acNo + " - " : "") + (item.acName || item.desc);
+                                if(ac === 0) label = "6000 - UNCATEGORIZED EXPENSE";
+                                opexDict[label] = (opexDict[label] || 0) + amt;
+                            }
+                            if (bsMatch) cumExp += amt;
+                        }
+                    });
+                    
+                    // Pelarasan Diskaun untuk stabilkan Balance Sheet
+                    if (bDisc > 0) {
+                        if (pnlMatch) { totalExp -= bDisc; opexDict["DISCOUNTS RECEIVED"] = (opexDict["DISCOUNTS RECEIVED"] || 0) - bDisc; }
+                        if (bsMatch) cumExp -= bDisc;
+                    }
+                } else {
+                    if (pnlMatch) { totalExp += billTot; opexDict["6000 - UNCATEGORIZED EXPENSE"] = (opexDict["6000 - UNCATEGORIZED EXPENSE"] || 0) + billTot; }
+                    if (bsMatch) cumExp += billTot;
+                }
+
+                if (bsMatch) {
+                    let paid = 0; 
+                    if(b.payments) b.payments.forEach(p => { 
+                        if(new Date(p.date).getTime() <= filterDate.getTime()) paid += parseFloat(p.amount)||0; 
+                    });
+                    totalAP += (billTot - paid);
+                }
+            }
+        });
+
+        // ==========================================
+        // 4. KIRAAN BUKU TUNAI (CASHBOOK)
+        // ==========================================
+        expensesRaw.forEach(txn => {
+            let amt = parseFloat(txn.amount) || 0;
+            let ac = getAcNo(txn.category);
+            let pnlMatch = filterByDate(txn.date, fYear, fMonth);
+            let bsMatch = new Date(txn.date).getTime() <= filterDate.getTime();
+
+            // P&L Logic
+            if(pnlMatch && !isSystemCat(txn.category) && !isCapital(txn.category, ac)) {
+                if (ac >= 1000 && ac <= 1999) { /* Abaikan Aset dlm P&L */ }
+                else if(txn.flow === 'IN') {
+                    if (ac >= 4000 && ac <= 4999) totalSales += amt;
+                    else otherIncome += amt;
+                } else {
+                    if (ac >= 5000 && ac <= 5999) {
+                        totalCOGS += amt; cogsDict[txn.category] = (cogsDict[txn.category] || 0) + amt;
+                    } else {
+                        totalExp += amt;
+                        let label = txn.category || "6000 - UNCATEGORIZED EXPENSE";
+                        opexDict[label] = (opexDict[label] || 0) + amt;
+                    }
+                }
+            }
+
+            // BS Logic
+            if (bsMatch) {
+                if(txn.accType === 'BANK') { if(txn.flow === 'IN') bankBal += amt; else bankBal -= amt; }
+                if(txn.accType === 'TUNAI') { if(txn.flow === 'IN') cashBal += amt; else cashBal -= amt; }
+                
+                if(isCapital(txn.category, ac)) {
+                    if(txn.flow === 'IN') totalCapital += amt; else totalCapital -= amt;
+                } else if(!isSystemCat(txn.category)) {
+                    if (ac >= 1000 && ac <= 1999) { 
+                        if(txn.flow === 'OUT') fixedAssets += amt; else fixedAssets -= amt; 
+                    }
+                    else if (txn.flow === 'IN') { 
+                        if(ac >= 4000 && ac <= 4999) cumSales += amt; else cumOtherIn += amt; 
+                    }
+                    else { 
+                        if(ac >= 5000 && ac <= 5999) cumCOGS += amt; else cumExp += amt; 
+                    }
+                }
+            }
+        });
+
+        // ==========================================
+        // 5. KIRAAN CN / DN (PELARASAN PINTAR)
+        // ==========================================
+        cndns.forEach(cn => {
+            let isAR = clients.some(c => c.name === cn.cName || c.name === cn.custName);
+            let isAP = suppliers.some(s => s.name === cn.cName || s.name === cn.custName);
+            
+            // Fallback checking guna rujukan dokumen (INV = AR, BIL = AP, dll)
+            if (!isAR && !isAP && cn.refInv) {
+                let ref = cn.refInv.toUpperCase();
+                if (ref.startsWith('INV') || ref.startsWith('OR')) isAR = true;
+                if (ref.startsWith('BIL') || ref.startsWith('PV') || ref.startsWith('PO')) isAP = true;
+            }
+            if (!isAR && !isAP) isAR = true; // Default Fallback
+
+            let isCN = cn.id.startsWith('CN-') || (cn.type && cn.type.includes('CREDIT'));
+            let isOverpayment = false;
+            
+            // Semak adakah ia janaan automatik dari overpayment
+            if (cn.items && cn.items.length > 0) {
+                let desc = (cn.items[0].desc || "").toUpperCase();
+                if (desc.includes('OVERPAYMENT')) isOverpayment = true;
+            }
+
+            let amt = parseFloat(cn.total) || 0;
+            let pnlMatch = filterByDate(cn.date, fYear, fMonth);
+            let bsMatch = new Date(cn.date).getTime() <= filterDate.getTime();
+
+            // Pelaksanaan untuk P&L (Bulan Semasa)
+            if (pnlMatch) {
+                if (isAR) {
+                    if (isCN && !isOverpayment) totalSales -= amt;
+                    else if (!isCN && !isOverpayment) totalSales += amt;
+                } else {
+                    if (isCN && !isOverpayment) totalExp -= amt;
+                    else if (!isCN && !isOverpayment) totalExp += amt;
+                }
+            }
+
+            // Pelaksanaan untuk Balance Sheet (Terkumpul)
+            if (bsMatch) {
+                if (isAR) {
+                    if (isCN) {
+                        totalAR -= amt; // Walau overpayment, AR tetap kurang
+                        if (!isOverpayment) cumSales -= amt; // Tapi jualan tak kurang
+                    } else { // DN
+                        totalAR += amt;
+                        if (!isOverpayment) cumSales += amt;
+                    }
+                } else { // AP
+                    if (isCN) {
+                        totalAP -= amt;
+                        if (!isOverpayment) cumExp -= amt;
+                    } else { // DN
+                        if (isOverpayment) {
+                            totalAP -= amt; // Overpayment kepada supplier mengurangkan hutang kita
+                        } else {
+                            totalAP += amt; // Caj tambahan dari supplier naikkan hutang & belanja
+                            cumExp += amt;
+                        }
+                    }
+                }
+            }
+        });
+
+        // ==========================================
+        // 6. PAPARAN P&L
+        // ==========================================
+        let grossProfit = totalSales - totalCOGS;
+        let netProfit = (grossProfit + otherIncome) - totalExp;
+
+        const fmt = (num) => parseFloat(num || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+        let cogsHtml = "";
+        for(let key in cogsDict) cogsHtml += `<tr><td class="indent">${key}</td><td class="money">${fmt(cogsDict[key])}</td></tr>`;
+        if(!cogsHtml) cogsHtml = `<tr><td class="indent" style="color:#999;">No direct costs.</td><td class="money">-</td></tr>`;
+
+        let expHtml = "";
+        for(let key in opexDict) expHtml += `<tr><td class="indent">${key}</td><td class="money">${fmt(opexDict[key])}</td></tr>`;
+
+        let pnlHtml = `
+            <tr><td colspan="2" style="font-weight:bold; color:var(--primary);">REVENUE</td></tr>
+            <tr><td class="indent">Sales Revenue</td><td class="money">${fmt(totalSales)}</td></tr>
+            <tr class="spacer-row"><td colspan="2"></td></tr>
+            
+            <tr><td colspan="2" style="font-weight:bold; color:var(--primary);">LESS: COST OF SALES</td></tr>
+            ${cogsHtml}
+            <tr class="total-row"><td class="indent">Total Production & Direct Costs</td><td class="money line-top line-bottom">${fmt(totalCOGS)}</td></tr>
+            <tr class="spacer-row"><td colspan="2"></td></tr>
+            
+            <tr class="total-row"><td>GROSS PROFIT</td><td class="money">${fmt(grossProfit)}</td></tr>
+            <tr class="spacer-row"><td colspan="2"></td></tr>
+            
+            ${otherIncome > 0 ? `<tr><td class="indent" style="font-weight:bold;">ADD: OTHER INCOME</td><td class="money">${fmt(otherIncome)}</td></tr><tr class="spacer-row"><td colspan="2"></td></tr>` : ''}
+            
+            <tr><td colspan="2" style="font-weight:bold; color:var(--primary);">LESS: OPERATING EXPENSES</td></tr>
+            ${expHtml || `<tr><td class="indent" style="color:#999;">No expenses.</td><td class="money">-</td></tr>`}
+            <tr class="total-row"><td class="indent">TOTAL EXPENSES</td><td class="money line-top line-bottom">${fmt(totalExp)}</td></tr>
+            
+            
+            <tr class="total-row"><td>NET PROFIT / (LOSS)</td><td class="money line-double">${fmt(netProfit)}</td></tr>
+        `;
+        document.getElementById('pnl-body').innerHTML = pnlHtml;
+
+        // ==========================================
+        // 7. PAPARAN BALANCE SHEET
+        // ==========================================
+        let totalAssets = bankBal + cashBal + totalAR + fixedAssets;
+        let netAssets = totalAssets - totalAP;
+        
+        let cumNetProfit = cumSales + cumOtherIn - cumCOGS - cumExp;
+        let retainedEarningsBF = cumNetProfit - netProfit; 
+        let displayCapital = totalCapital + retainedEarningsBF;
+
+        let bsHtml = `
+            ${fixedAssets > 0 ? `<tr><td colspan="2" style="font-weight:bold; color:var(--primary);">NON-CURRENT ASSETS</td></tr><tr><td class="indent">Property, Plant & Equipment (PPE)</td><td class="money line-bottom">${fmt(fixedAssets)}</td></tr><tr class="spacer-row"><td colspan="2"></td></tr>` : ''}
+            
+            <tr><td colspan="2" style="font-weight:bold; color:var(--primary);">CURRENT ASSETS</td></tr>
+            <tr><td class="indent">Cash at Bank</td><td class="money">${fmt(bankBal)}</td></tr>
+            <tr><td class="indent">Cash in Hand</td><td class="money">${fmt(cashBal)}</td></tr>
+            <tr><td class="indent">Trade Debtors (Accounts Receivable)</td><td class="money line-bottom">${fmt(totalAR)}</td></tr>
+            <tr class="total-row"><td class="indent">TOTAL ASSETS</td><td class="money line-top line-bottom">${fmt(totalAssets)}</td></tr>
+            <tr class="spacer-row"><td colspan="2"></td></tr>
+            
+            <tr><td colspan="2" style="font-weight:bold; color:var(--primary);">CURRENT LIABILITIES</td></tr>
+            <tr><td class="indent">Trade Creditors (Accounts Payable)</td><td class="money">${fmt(totalAP)}</td></tr>
+            <tr class="total-row"><td class="indent">TOTAL LIABILITIES</td><td class="money line-top line-bottom">${fmt(totalAP)}</td></tr>
+            
+            
+            <tr class="total-row"><td>NET ASSETS</td><td class="money line-double">${fmt(netAssets)}</td></tr>
+            <tr class="spacer-row"><td colspan="2"></td></tr>
+            
+            <tr><td colspan="2" style="font-weight:bold; color:var(--primary);">EQUITY</td></tr>
+            <tr><td class="indent">Capital & Retained Earnings</td><td class="money">${fmt(displayCapital)}</td></tr>
+            <tr><td class="indent">Net Profit / (Loss) for the Period</td><td class="money">${fmt(netProfit)}</td></tr>
+            <tr class="total-row"><td>TOTAL EQUITY</td><td class="money line-double">${fmt(displayCapital + netProfit)}</td></tr>
+        `;
+        document.getElementById('bs-body').innerHTML = bsHtml;
+    };
+</script>
+</script>
+</body>
+</html>

@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>313 HQ - Master Admin Console</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+
+    <style>
+        :root {
+            --bg: #f4f6f8; --primary: #2c3e50; --accent: #27ae60; --danger: #e74c3c;
+        }
+        body { font-family: 'Montserrat', sans-serif; background: var(--bg); margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
+        
+        .admin-card { 
+            max-width: 500px; width: 100%; background: white; padding: 40px; 
+            border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); 
+            display: none; /* Sorok semua dulu sementara loading */
+        }
+
+        .header { text-align: center; margin-bottom: 30px; }
+        .header h1 { color: var(--primary); margin: 0; font-weight: 800; font-size: 24px; letter-spacing: -1px; }
+        .header span { color: var(--danger); }
+
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-size: 11px; font-weight: 700; color: #777; margin-bottom: 5px; text-transform: uppercase; }
+        
+        input { 
+            width: 100%; padding: 12px; border: 2px solid #eee; border-radius: 8px; 
+            font-family: 'Montserrat'; font-weight: 600; box-sizing: border-box; transition: 0.3s;
+        }
+        input:focus { border-color: var(--primary); outline: none; }
+
+        .btn { 
+            width: 100%; padding: 14px; border: none; border-radius: 8px; 
+            font-family: 'Montserrat'; font-weight: 700; cursor: pointer; transition: 0.3s; margin-top: 10px;
+        }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-success { background: var(--accent); color: white; }
+        .btn-wa { background: #25D366; color: white; margin-top: 20px; }
+
+        .wa-preview { 
+            background: #f1f2f6; padding: 15px; border-radius: 8px; font-size: 12px; 
+            white-space: pre-wrap; border-left: 5px solid #25D366; margin-top: 10px; color: #333;
+        }
+
+        #loading-screen { text-align: center; font-weight: bold; color: var(--primary); font-size: 14px; }
+    </style>
+</head>
+<body>
+
+<div id="loading-screen">⏳ MEMULAKAN SISTEM HQ...</div>
+
+<div id="admin-login" class="admin-card">
+    <div class="header"><h1>313 <span>ADMIN GATE</span></h1><p style="font-size:12px; color:#888;">Authorized Personnel Only</p></div>
+    <div class="form-group"><label>Email Admin</label><input type="email" id="loginEmail" placeholder="admin@313.com"></div>
+    <div class="form-group"><label>Kata Laluan</label><input type="password" id="loginPass" placeholder="******"></div>
+    <button class="btn btn-primary" onclick="adminLogin()">LOG MASUK MASTER</button>
+</div>
+
+<div id="admin-panel" class="admin-card">
+    <div class="header"><h1>313 <span>GENERATOR</span></h1></div>
+    
+    <div class="form-group">
+        <label>Generated License Key</label>
+        <input type="text" id="key-output" readonly style="background:#f9f9f9; font-size:20px; text-align:center; color:var(--accent); font-family: monospace;" placeholder="---- ---- ----">
+        <button class="btn btn-primary" onclick="generateKey()">🎲 GENERATE KOD BARU</button>
+    </div>
+
+    <div id="action-area" style="display:none; margin-top:20px; padding-top:20px; border-top:1px dashed #ddd;">
+        <button id="btn-save" class="btn btn-success" onclick="saveToCloud()">☁️ AKTIFKAN & SIMPAN KE CLOUD</button>
+        
+        <label style="margin-top:20px;">WhatsApp Template:</label>
+        <div class="wa-preview" id="wa-text"></div>
+        <button class="btn btn-wa" onclick="copyAndNotify()">📋 SALIN & WHATSAPP</button>
+    </div>
+
+    <div style="text-align:center; margin-top:30px; border-top: 1px solid #eee; padding-top: 15px;">
+        <button onclick="adminLogout()" style="background:none; border:none; color:var(--danger); font-weight:700; cursor:pointer; font-size:12px;">🚪 LOG KELUAR</button>
+    </div>
+</div>
+
+<script>
+    // --- 1. CONFIG FIREBASE ---
+    const firebaseConfig = {
+        apiKey: "AIzaSyCjJab1uItHC62ZfZVD5nMtZZtm76fc46Y",
+        authDomain: "sistem313-8bba4.firebaseapp.com",
+        projectId: "sistem313-8bba4",
+        storageBucket: "sistem313-8bba4.firebasestorage.app",
+        messagingSenderId: "613290008986",
+        appId: "1:613290008986:web:a16e7141ab8f0e5dd89a23"
+    };
+
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    // --- 2. MONITORING STATUS LOGIN ---
+    auth.onAuthStateChanged(async (user) => {
+        document.getElementById('loading-screen').style.display = 'none';
+        
+        if (user) {
+            try {
+                // Tarik data user untuk check role admin
+                const userDoc = await db.collection("users").doc(user.uid).get();
+                
+                if (userDoc.exists && userDoc.data().role === 'admin') {
+                    // Berjaya: Tunjuk Panel Admin
+                    document.getElementById('admin-panel').style.display = 'block';
+                    document.getElementById('admin-login').style.display = 'none';
+                } else {
+                    // Gagal: Bukan Admin
+                    const currentRole = userDoc.exists() ? userDoc.data().role : "Data Tidak Wujud";
+                    alert(`AKSES DITOLAK!\nAkaun anda tiada kebenaran Admin.\nUID Anda: ${user.uid}\nRole Semasa: ${currentRole}`);
+                    await auth.signOut();
+                    window.location.reload();
+                }
+            } catch (err) {
+                // Menangkap ralat sekiranya rules Firebase sekat
+                console.error("Firestore Error:", err);
+                alert("RALAT FIRESTORE:\n" + err.message + "\n\nPastikan Rules Firebase membenarkan 'read' dan Domain telah disahkan.");
+                await auth.signOut();
+                window.location.reload();
+            }
+        } else {
+            // Jika tak login, tunjuk form login
+            document.getElementById('admin-login').style.display = 'block';
+            document.getElementById('admin-panel').style.display = 'none';
+        }
+    });
+
+    // --- 3. FUNGSI LOGIN ADMIN ---
+    async function adminLogin() {
+        const email = document.getElementById('loginEmail').value.trim();
+        const pass = document.getElementById('loginPass').value.trim();
+        
+        if(!email || !pass) return alert("Sila masukkan e-mel dan kata laluan!");
+
+        const btn = document.querySelector('.btn-primary');
+        btn.innerText = "MENYEMAK AKSES...";
+        btn.disabled = true;
+
+        try {
+            await auth.signInWithEmailAndPassword(email, pass);
+        } catch (e) { 
+            alert("LOGIN GAGAL:\n" + e.message); 
+            btn.innerText = "LOG MASUK MASTER";
+            btn.disabled = false;
+        }
+    }
+
+    function adminLogout() {
+        if(confirm("Log keluar dari Console HQ?")) {
+            auth.signOut().then(() => window.location.reload());
+        }
+    }
+
+    // --- 4. FUNGSI GENERATOR ---
+    function generateKey() {
+        // Buang huruf mengelirukan spt I, O dan nombor 1, 0
+        const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+        let p1 = "", p2 = "";
+        for(let i=0; i<4; i++) p1 += chars.charAt(Math.floor(Math.random() * chars.length));
+        for(let i=0; i<4; i++) p2 += chars.charAt(Math.floor(Math.random() * chars.length));
+        
+        const key = `313-${p1}-${p2}`;
+        document.getElementById('key-output').value = key;
+        document.getElementById('action-area').style.display = 'block';
+        
+        // PENTING: Tukar URL di bawah jika domain sistem pelanggan bos berbeza
+        const msg = `Salam Sejahtera,\n\nTerima kasih kerana memilih *Sistem Kewangan 313*.\n\nBerikut adalah Kod Akses (License Key) anda:\n🔑 *${key}*\n\nAnda boleh mula mendaftar di sini:\n🔗 https://sistemkewangan313.wuaze.com\n\n_Nota: Sila sahkan e-mel selepas pendaftaran untuk mula menggunakan sistem._`;
+        document.getElementById('wa-text').innerText = msg;
+        
+        const btnSave = document.getElementById('btn-save');
+        btnSave.disabled = false;
+        btnSave.innerText = "☁️ AKTIFKAN & SIMPAN KE CLOUD";
+    }
+
+    async function saveToCloud() {
+        const key = document.getElementById('key-output').value;
+        const btn = document.getElementById('btn-save');
+        
+        btn.innerText = "SEDANG MENGAKTIFKAN..."; 
+        btn.disabled = true;
+
+        try {
+            await db.collection("license_codes").doc(key).set({
+                status: "active",
+                created_at: Date.now()
+            });
+            btn.innerText = "✅ KOD TELAH DIAKTIFKAN!";
+            alert("Berjaya! Kod " + key + " kini sedia untuk pendaftaran customer.");
+        } catch (e) {
+            alert("Ralat Simpan: " + e.message);
+            btn.disabled = false;
+            btn.innerText = "☁️ Cuba Lagi";
+        }
+    }
+
+    function copyAndNotify() {
+        const text = document.getElementById('wa-text').innerText;
+        navigator.clipboard.writeText(text).then(() => {
+            alert("Mesej disalin! Sila 'Paste' pada WhatsApp pelanggan bos.");
+        }).catch(() => {
+            // Fallback untuk browser yang lebih lama
+            const el = document.createElement('textarea');
+            el.value = text;
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+            alert("Mesej disalin!");
+        });
+    }
+</script>
+
+</body>
+</html>

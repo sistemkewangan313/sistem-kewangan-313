@@ -1,0 +1,2410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Kewangan 313 - Accounts Receivable (A/R)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --text-main: #000000; --text-muted: #111111;
+            --accent: #e74c3c; --bg-body: #f4f6f8; --nav-bg: #2c3e50;
+            --primary: #2980b9; --success: #27ae60; --warning: #f39c12;
+            --edit-bg: rgba(0, 0, 0, 0.03); --edit-border: rgba(0, 0, 0, 0.2);
+        }
+
+        body { font-family: 'Montserrat', sans-serif; margin: 0; padding: 0; background: var(--bg-body); color: var(--text-main); }
+        
+        /* NAVBAR */
+        .navbar { background: var(--nav-bg); padding: 0 20px; display: flex; align-items: center; overflow-x: auto; white-space: nowrap; box-shadow: 0 4px 10px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 1000;}
+        .nav-brand { color: white; font-weight: 800; font-size: 18px; margin-right: 30px; padding: 15px 0; letter-spacing: 1px;}
+        .nav-brand span { color: var(--warning); }
+        .nav-item { color: #bdc3c7; font-weight: 600; font-size: 13px; padding: 18px 15px; cursor: pointer; transition: 0.3s; border-bottom: 3px solid transparent; text-decoration: none; display: inline-block;}
+        .nav-item:hover { color: white; }
+        .nav-item.active { color: white; border-bottom-color: var(--warning); background: rgba(255,255,255,0.05); }
+
+        /* CRM SPLIT LAYOUT */
+        .crm-container { display: flex; gap: 20px; padding: 20px; max-width: 1400px; margin: 0 auto; }
+        .crm-left { flex: 1; min-width: 300px; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); height: max-content; position: sticky; top: 80px;}
+        .crm-right { flex: 2.5; min-width: 400px; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-size: 12px; font-weight: 700; color: #555; margin-bottom: 5px; }
+        .form-control { width: 100%; padding: 10px; border: 2px solid #eee; border-radius: 6px; font-family: 'Montserrat'; font-size: 13px; box-sizing: border-box; transition: 0.3s;}
+        .form-control:focus { border-color: var(--primary); outline: none; }
+        
+        .btn { padding: 10px 20px; border-radius: 6px; border: none; cursor: pointer; font-family: 'Montserrat'; font-weight: 700; font-size: 13px; transition: 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 8px;}
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-success { background: var(--success); color: white; }
+        .btn-warning { background: var(--warning); color: white; }
+        .btn-danger { background: var(--accent); color: white; }
+        .btn-outline { background: transparent; border: 2px solid #ddd; color: #555; }
+        .btn-outline:hover { background: #eee; }
+
+        /* TABLE STYLES */
+        .table-responsive { width: 100%; overflow-x: auto; }
+        table.crm-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        table.crm-table th { background: #f8f9fa; padding: 12px; text-align: left; border-bottom: 2px solid #ddd; color: #555; font-weight: 700; font-size: 11px; text-transform: uppercase;}
+        table.crm-table td { padding: 12px; border-bottom: 1px solid #eee; vertical-align: middle; }
+        table.crm-table tr:hover { background: #fdfdfd; }
+
+        /* CLIENT VAULT */
+        #vault-section { display: none; padding: 20px; max-width: 1400px; margin: 0 auto; animation: fadeIn 0.3s; }
+        .vault-header { background: linear-gradient(135deg, #2c3e50, #3498db); color: white; padding: 30px; border-radius: 8px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 10px 20px rgba(0,0,0,0.1);}
+        .vault-stat-box { background: rgba(255,255,255,0.1); padding: 15px 20px; border-radius: 6px; text-align: right; border: 1px solid rgba(255,255,255,0.2);}
+        .vault-actions { background: white; padding: 15px 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: flex; gap: 10px; flex-wrap: wrap;}
+        
+        /* UNIFIED DOCUMENT EDITOR */
+        #editor-section { display: none; padding: 20px; padding-bottom: 100px; background: #e0e0e0; min-height: 100vh; animation: fadeIn 0.3s; }
+        .document-box { max-width: 800px; margin: 0 auto; background: white; padding: 60px; box-shadow: 0 20px 50px rgba(0,0,0,0.15); font-family: Arial, sans-serif; color: #000; position: relative;}
+        
+        .doc-input, .doc-textarea { border: 1px dashed transparent; background: transparent; font-family: Arial; color: #000; transition: 0.2s; padding: 2px;}
+        .doc-input:hover, .doc-textarea:hover { background: var(--edit-bg); border: 1px dashed var(--edit-border); }
+        .doc-input:focus, .doc-textarea:focus { background: white; border: 1px solid var(--primary); outline: none; }
+        .doc-textarea { resize: none; overflow: hidden; width: 100%; box-sizing: border-box; }
+        
+        .floating-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: white; padding: 15px 20px; box-shadow: 0 -5px 20px rgba(0,0,0,0.1); display: flex; justify-content: center; gap: 15px; z-index: 2000; box-sizing: border-box;}
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* AGEING TABLE STYLES */
+        .ageing-box { display: none; padding: 20px; max-width: 1400px; margin: 0 auto; animation: fadeIn 0.3s; }
+        .ageing-box.active { display: block; }
+        .ageing-table-print { font-family: Arial, sans-serif; width: 100%; border-collapse: collapse;}
+        .ageing-table-print th { background-color: #f0f0f0; border: 1px solid #000; padding: 6px; font-size: 11px; text-align: center; }
+        .ageing-table-print td { border: 1px dotted #ccc; padding: 6px; font-size: 11px; vertical-align: middle; }
+        .ageing-table-print tfoot td { border: 1px solid #000; font-weight: bold; background-color: #f9f9f9; }
+
+        /* SOA VIEW STYLES */
+        #soa-section { display: none; padding: 20px; padding-bottom: 100px; background: #e0e0e0; min-height: 100vh; animation: fadeIn 0.3s; }
+        .soa-table th { padding: 8px; border: 1px solid #000; text-align: left; font-size: 12px; background: #f0f0f0;}
+        .soa-table td { padding: 8px; border-right: 1px solid #000; border-left: 1px solid #000; font-size: 12px;}
+
+        /* MODAL PAYMENT */
+        .modal { display: none; position: fixed; z-index: 2005; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(3px); }
+        .modal-content { background: white; margin: 5% auto; padding: 30px; border-radius: 8px; width: 90%; max-width: 600px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); animation: fadeIn 0.3s; max-height: 90vh; overflow-y: auto;}
+        .close-btn { float: right; font-size: 24px; cursor: pointer; font-weight: bold; color: #888; }
+        .close-btn:hover { color: #e74c3c; }
+
+        /* PRINT RULES */
+        .print-mirror { display: none; white-space: pre-wrap; word-wrap: break-word; }
+        @media print {
+            body { background: white; padding: 0; margin: 0; }
+            .navbar, .crm-container, #vault-section, .floating-bar, .no-print, button, .modal { display: none !important; }
+            body > div { display: none !important; }
+            
+            body.printing-invoice > #editor-section { display: block !important; padding: 0 !important; min-height: auto !important; }
+            body.printing-soa > #soa-section { display: block !important; padding: 0 !important; min-height: auto !important; }
+            body.printing-aging > #tab-aging { display: block !important; padding: 0 !important; min-height: auto !important; }
+
+            .document-box { box-shadow: none !important; padding: 0 !important; margin: 0 !important; max-width: 100% !important; border:none !important;}
+            input::placeholder, textarea::placeholder { color: transparent !important; }
+            textarea, input.item-desc { display: none !important; }
+            .print-mirror { display: block !important; }
+            input { border: none !important; background: transparent !important; padding: 0 !important; margin: 0 !important; }
+            
+            #doc-date, #doc-no, #doc-extra-input { text-align: right !important; }
+            #doc-co-name, #doc-co-addr { text-align: left !important; }
+            
+            .ageing-table-print tfoot { display: table-row-group !important; }
+
+            /* KOD BARU: Buat semua tulisan jadi hitam dan buang kotak jadual item */
+            body.printing-invoice .document-box * { color: #000 !important; }
+            body.printing-invoice .table-responsive table { border: none !important; }
+            body.printing-invoice .table-responsive th { 
+                border-top: 1px solid #000 !important; 
+                border-bottom: 1px solid #000 !important; 
+                border-right: none !important; 
+                border-left: none !important; 
+                background: transparent !important; 
+            }
+            body.printing-invoice .table-responsive td { border: none !important; }
+            body.printing-invoice #doc-items tr { border-bottom: none !important; }
+            body.printing-invoice #doc-discount { display: none !important; }
+            body.printing-invoice #doc-disc-print { display: inline !important; }
+        }
+
+        @media screen and (max-width: 768px) {
+            .crm-container { flex-direction: column; }
+            .crm-left { position: static; }
+            .vault-header { flex-direction: column; align-items: flex-start; gap: 15px; }
+            .vault-stat-box { width: 100%; text-align: left; box-sizing: border-box; }
+            .document-box { padding: 20px; }
+        }
+        /* Buang anak panah pada kotak nombor supaya nampak kemas macam teks biasa */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+
+        /* SISTEM USER ROLES (ADMIN VS STAFF) */
+        body.role-staff .admin-only { display: none !important; }
+        body.role-staff .staff-disabled { pointer-events: none !important; opacity: 0.5 !important; filter: grayscale(100%); }
+        
+        /* PIN OVERLAY */
+        #pinOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: rgba(44, 62, 80, 0.95); z-index: 9998; justify-content: center; align-items: center; flex-direction: column; }
+        .pin-box { background: white; padding: 40px; border-radius: 12px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 300px; box-sizing: border-box;}
+
+    </style>
+</head>
+<body>
+
+<div class="navbar no-print">
+    <div class="nav-brand">Sistem<span> Kewangan 313</span></div>
+    <a href="index.html" class="nav-item">🏠 Dashboard & Settings</a>
+    <a href="ar.html" class="nav-item active">👥 Receivables (A/R)</a>
+    <a href="ap.html" class="nav-item">🏭 Payables (A/P)</a>
+    <a href="cashbook.html" class="nav-item">📘 Cashbook & Bank</a>
+    <a href="gl.html" class="nav-item admin-only">📊 Accounts & Audit (GL)</a>
+</div>
+
+<div id="crm-section" class="crm-container">
+    <div class="crm-left no-print">
+        <h3 id="form-title" style="margin-top:0; color:var(--nav-bg); border-bottom:2px solid #eee; padding-bottom:10px;">➕ Register New Client</h3>
+        <input type="hidden" id="reg-id"> 
+        <div class="form-group">
+            <label>Customer Code</label>
+            <input type="text" id="reg-code" class="form-control" placeholder="C-001 (Biar kosong untuk auto)" style="text-transform:uppercase; font-weight:bold; color:var(--primary);">
+        </div>
+        <div class="form-group"><label>Company / Client Name *</label><input type="text" id="reg-name" class="form-control" style="text-transform:uppercase;"></div>
+        <div class="form-group"><label>Contact Person (ATTN)</label><input type="text" id="reg-attn" class="form-control"></div>
+        <div class="form-group"><label>Phone Number</label><input type="text" id="reg-phone" class="form-control"></div>
+        <div class="form-group"><label>Full Address</label><textarea id="reg-addr" class="form-control" rows="3"></textarea></div>
+        <div class="form-group"><label>Default Payment Terms</label><input type="text" id="reg-terms" class="form-control" placeholder="Eg: 30 Days"></div>
+        <div style="display:flex; gap:10px;">
+            <button class="btn btn-success" id="btn-save-client" style="flex:1;" onclick="registerClient()">💾 Save Client</button>
+            <button class="btn btn-outline" id="btn-cancel-edit" style="display:none;" onclick="cancelEditClient()">❌ Cancel</button>
+        </div>
+    </div>
+
+    <div class="crm-right no-print">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+            <h2 id="right-panel-title" style="margin:0; color:var(--nav-bg);">👥 Client Database</h2>
+            
+            <div style="display: flex; gap: 10px; background: #f8f9fa; padding: 5px; border-radius: 8px; border: 1px solid #eee; overflow-x: auto;">
+                <button class="btn btn-primary" id="btn-tab-clients" onclick="toggleRightPanel('CLIENTS')" style="padding:8px 15px; white-space:nowrap;">👥 Clients</button>
+                <button class="btn btn-outline" id="btn-tab-orders" onclick="toggleRightPanel('ORDERS')" style="padding:8px 15px; border:none; white-space:nowrap;">📥 Orders</button>
+                <button class="btn btn-outline" id="btn-tab-alldocs" onclick="toggleRightPanel('ALLDOCS')" style="padding:8px 15px; border:none; white-space:nowrap;">📑 All Documents</button>
+            </div>
+            
+            <button class="btn btn-warning" onclick="openAgeing()">📊 A/R Ageing Report</button>
+        </div>
+        
+        <input type="text" id="search-data" class="form-control" style="margin-bottom:15px; border: 2px solid #ccc;" placeholder="🔍 Search client..." onkeyup="filterTableData()">
+
+        <div id="view-clients">
+            <div class="filter-bar" style="margin-bottom: 15px; display: flex; justify-content: flex-end;">
+                <strong style="font-size:12px; color:#555; margin-right: 10px;">Sort By:</strong>
+                <select id="sort-client-by" class="form-control" style="width:auto; padding:6px 12px; font-weight:bold; color:var(--primary);" onchange="currentClientPage=1; renderClientsTable()">
+                    <option value="CODE_ASC">🔢 Code (A - Z)</option>
+                    <option value="CODE_DESC">🔢 Code (Z - A)</option>
+                    <option value="NAME_ASC">🔤 Name (A - Z)</option>
+                    <option value="NAME_DESC">🔤 Name (Z - A)</option>
+                    <option value="BAL_DESC">💰 Balance (Highest First)</option>
+                    <option value="BAL_ASC">💰 Balance (Lowest First)</option>
+                </select>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="crm-table" id="client-table">
+                    <thead><tr><th>Client Name</th><th>Contact / Phone</th><th style="text-align:right;">Total Outstanding (RM)</th><th style="text-align:center;">Action</th></tr></thead>
+                    <tbody id="client-list-body"></tbody>
+                </table>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee;">
+                <button class="btn btn-outline" id="btn-prev-clients" onclick="changePageClients(-1)">⬅️ Prev</button>
+                <span style="font-size:12px; font-weight:bold; color:#555;">Page <span id="lbl-page-clients">1</span> of <span id="lbl-total-clients">1</span></span>
+                <button class="btn btn-outline" id="btn-next-clients" onclick="changePageClients(1)">Next ➡️</button>
+            </div>
+        </div>
+
+        <div id="view-orders" style="display:none;">
+            <div class="filter-bar" style="margin-bottom: 15px; display: flex; justify-content: flex-end;">
+                <strong style="font-size:12px; color:#555; margin-right: 10px;">Sort By:</strong>
+                <select id="sort-order-by" class="form-control" style="width:auto; padding:6px 12px; font-weight:bold; color:var(--primary);" onchange="currentOrderPage=1; renderOrdersTable()">
+                    <option value="DATE_DESC">📅 Date (Newest First)</option>
+                    <option value="DATE_ASC">📅 Date (Oldest First)</option>
+                    <option value="AMT_DESC">💰 Amount (Highest First)</option>
+                </select>
+            </div>
+
+            <div class="table-responsive">
+                <table class="crm-table" id="order-table">
+                    <thead>
+                        <tr>
+                            <th style="width:12%;">Date</th>
+                            <th style="width:20%;">Order No.</th>
+                            <th style="width:25%;">Client & Project</th>
+                            <th style="text-align:right; width:15%;">Amount (RM)</th>
+                            <th style="text-align:center; width:28%;">Action / Fulfill</th>
+                        </tr>
+                    </thead>
+                    <tbody id="order-list-body"></tbody>
+                </table>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee;">
+                <button class="btn btn-outline" id="btn-prev-orders" onclick="changePageOrders(-1)">⬅️ Prev</button>
+                <span style="font-size:12px; font-weight:bold; color:#555;">Page <span id="lbl-page-orders">1</span> of <span id="lbl-total-orders">1</span></span>
+                <button class="btn btn-outline" id="btn-next-orders" onclick="changePageOrders(1)">Next ➡️</button>
+            </div>
+        </div>
+        <div id="view-alldocs" style="display:none;">
+            <div class="filter-bar" style="margin-bottom: 15px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                <strong style="font-size:12px; color:#555;">Filter Type:</strong>
+                <select id="filter-doc-type" class="form-control" style="width:auto; padding:6px 12px; font-weight:bold;" onchange="currentDocPage=1; renderAllDocsTable()">
+                    <option value="ALL">ALL TYPES</option>
+                    <option value="INV">Invoices</option>
+                    <option value="OR">Official Receipts</option>
+                    <option value="QUO">Quotations</option>
+                    <option value="CPO">Sales Orders</option>
+                    <option value="DO">Delivery Orders</option>
+                    <option value="CNDN">Credit/Debit Notes</option>
+                </select>
+
+                <strong style="font-size:12px; color:#555; margin-left: 10px;">Sort By:</strong>
+                <select id="sort-doc-by" class="form-control" style="width:auto; padding:6px 12px; font-weight:bold; color:var(--primary);" onchange="currentDocPage=1; renderAllDocsTable()">
+                    <option value="DATE_DESC">📅 Date (Newest First)</option>
+                    <option value="DATE_ASC">📅 Date (Oldest First)</option>
+                    <option value="DOC_DESC">🔢 Doc No (Highest First)</option>
+                    <option value="DOC_ASC">🔢 Doc No (Lowest First)</option>
+                </select>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="crm-table">
+                    <thead>
+                        <tr>
+                            <th style="width:15%;">Doc No</th>
+                            <th style="width:12%;">Date</th>
+                            <th style="width:10%;">Type</th>
+                            <th style="width:30%;">Client Name</th>
+                            <th style="text-align:right; width:15%;">Total (RM)</th>
+                            <th style="text-align:center; width:18%;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="alldocs-list-body"></tbody>
+                </table>
+            </div>
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee;">
+                <button class="btn btn-outline" id="btn-prev-docs" onclick="changePageDocs(-1)">⬅️ Prev</button>
+                <span style="font-size:12px; font-weight:bold; color:#555;">Page <span id="lbl-page-docs">1</span> of <span id="lbl-total-docs">1</span></span>
+                <button class="btn btn-outline" id="btn-next-docs" onclick="changePageDocs(1)">Next ➡️</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="vault-section" class="no-print">
+    <button class="btn btn-outline" style="margin-bottom:15px; background:white;" onclick="closeVault()">⬅️ Back to Master List</button>
+    <div class="vault-header">
+        <div><h1 id="v-client-name" style="margin:0 0 5px 0; font-size:28px;">CLIENT NAME</h1><div id="v-client-info" style="font-size:13px; opacity:0.9;">ATTN: - | Tel: -</div></div>
+        <div class="vault-stat-box"><div style="font-size:11px; text-transform:uppercase; letter-spacing:1px; opacity:0.8;">Total Outstanding Due</div><div style="font-size:28px; font-weight:800; color:#f1c40f;">RM <span id="v-client-outstanding">0.00</span></div></div>
+    </div>
+    <div class="vault-actions">
+        <button class="btn btn-primary" onclick="initDocument('QUO')">📝 + New Quotation</button>
+        <button class="btn btn-warning" onclick="initDocument('CPO')">📥 + Record Customer PO</button>
+        <button class="btn btn-success" onclick="initDocument('INV')">📄 + Direct Invoice</button>
+        <button class="btn btn-outline" onclick="initDocument('DO')">🚚 + Delivery Order</button>
+        <button class="btn btn-danger" onclick="initDocument('CNDN')">🔄 + Credit/Debit Note</button>
+        <button class="btn" style="background:#1abc9c; color:white;" onclick="openBulkPaymentModal()">💵 + Receive Payment (OR)</button>
+    </div>
+    <div style="background:white; padding:20px; border-radius:8px; box-shadow: 0 5px 15px rgba(0,0,0,0.05);">
+        
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #eee; padding-bottom:10px; margin-bottom:15px; flex-wrap:wrap; gap:10px;">
+            <h3 style="margin:0; color:var(--nav-bg);">📑 Document History & Pipeline</h3>
+            <div style="display:flex; align-items:center; gap:10px;">
+                <span style="font-size:12px; font-weight:bold; color:#555;">Filter:</span>
+                <select id="vault-filter" class="form-control" style="width:auto; padding:6px 12px; font-size:12px; font-weight:bold; border-color:#ccc;" onchange="filterVault()">
+                    <option value="ALL">ALL DOCUMENTS</option>
+                    <option value="QUO">📝 Quotations</option>
+                    <option value="CPO">📥 Sales Orders</option>
+                    <option value="DO">🚚 Delivery Orders</option>
+                    <option value="INV">📄 Invoices</option>
+                    <option value="OR">💵 Official Receipts</option>
+                    <option value="CNDN">🔄 Credit/Debit Notes</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="crm-table">
+                <thead><tr><th>Date</th><th>Doc Type & Ref</th><th>Project / Remarks</th><th style="text-align:right;">Amount (RM)</th><th style="text-align:center;">Status</th><th style="text-align:right;">Pipeline Actions</th></tr></thead>
+                <tbody id="vault-history-body"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div id="bulkPaymentModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="document.getElementById('bulkPaymentModal').style.display='none'">&times;</span>
+        <h3 style="margin-top:0; color:#2c3e50;">💵 Receive Payment (Official Receipt)</h3>
+        <p style="font-size:13px; color:#555;">Client: <strong id="bp-client-name" style="color:#000;"></strong></p>
+        
+        <div style="display:flex; gap:10px;">
+            <div class="form-group" style="flex:1;"><label>Payment Date</label><input type="date" id="bp-date" class="form-control"></div>
+            <div class="form-group" style="flex:1;"><label>Receive Into (Ledger)</label>
+                <select id="bp-acc" class="form-control" style="background:#e0f7fa; font-weight:bold;">
+                    <option value="BANK">🏦 Bank Account (Transfer/Cheque)</option>
+                    <option value="TUNAI">💵 Cash in Hand (Tunai)</option>
+                </select>
+            </div>
+        </div>
+        <div style="display:flex; gap:10px;">
+            <div class="form-group" style="flex:1;"><label>Payment Ref / Method</label><input type="text" id="bp-ref" class="form-control" style="text-transform:uppercase;" placeholder="Eg: MBB Transfer / Cheque No"></div>
+        </div>
+
+        <h4 style="margin-bottom:5px; border-bottom:2px solid #eee; padding-bottom:5px;">Tick Invoices to Pay:</h4>
+        <p style="font-size:11px; color:#7f8c8d; margin-top:0;">*Tip: Enter amount LARGER than balance to auto-generate a Credit Note (Overpayment).</p>
+        <div style="margin-top:10px; max-height:200px; overflow-y:auto; border:1px solid #eee; border-radius:4px;">
+            <table class="crm-table" style="font-size:11px; margin:0;">
+                <thead style="position:sticky; top:0; background:#f4f6f8; z-index:10;">
+                    <tr><th style="text-align:center;">Pay</th><th>Invoice No</th><th style="text-align:right;">Balance Due</th><th style="text-align:right;">Apply Amount (RM)</th></tr>
+                </thead>
+                <tbody id="bp-inv-list"></tbody>
+            </table>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px; background:#f9f9f9; padding:15px; border-radius:6px; border:1px dashed #ccc;">
+            <div style="font-size:14px; font-weight:bold; color:#555;">Total Received: <br><span style="font-size:22px; color:#27ae60;">RM <span id="bp-applied-total">0.00</span></span></div>
+            <button class="btn btn-success" style="padding:12px 20px; font-size:14px;" onclick="processBulkPayment()">✅ Generate O.R.</button>
+        </div>
+    </div>
+</div>
+
+<div id="tab-aging" class="ageing-box">
+    <div class="controls no-print" style="justify-content: space-between; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px;">
+        <div><button class="btn btn-outline" onclick="closeAgeing()">⬅️ Back to CRM</button><button class="btn btn-primary" onclick="loadAgeingReport('summary')" style="margin-left: 15px;">📊 Summary (Debtor Balances)</button><button class="btn btn-warning" onclick="loadAgeingReport('detail')">📋 Detail (Debtors Ageing)</button></div>
+        <button class="btn btn-success" onclick="printAgeing()">🖨️ Print Report</button>
+    </div>
+    <div class="document-box" style="max-width: 100%; padding: 40px;">
+        <div style="display:flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px;">
+            <div><div style="font-weight:bold; font-size: 12px; margin-bottom: 5px;">Date: <span id="aging-as-at" style="margin-left:20px;"></span></div><div style="font-weight:bold; font-size: 12px;">Currency: <span style="margin-left:20px;">MYR - RINGGIT MALAYSIA</span></div></div>
+            <div style="display: flex; flex-direction: column; align-items: flex-end; text-align: right;"><img id="aging-logo" src="" style="max-height: 80px; object-fit: contain; margin-bottom: 10px; display:none;"><h2 id="aging-co-name" style="margin:0 0 5px 0; font-size:18px;">COMPANY NAME</h2><h3 id="aging-title" style="margin:0; font-size:14px; color: #555;">DEBTORS BALANCES AS AT</h3></div>
+        </div>
+        <div class="table-responsive"><table class="ageing-table-print"><thead id="aging-thead"></thead><tbody id="aging-tbody"></tbody><tfoot id="aging-tfoot"></tfoot></table></div>
+    </div>
+</div>
+
+<div id="soa-section">
+    <div class="document-box" style="padding: 40px; border: 1px solid #000; box-shadow: 0 10px 30px rgba(0,0,0,0.1);" id="soa-outer-box">
+        <div style="border: 2px solid #000; padding: 25px; background: #fff;">
+            <h2 style="margin:0 0 20px 0; font-size: 20px; font-family: Arial; text-transform:uppercase;">STATEMENT OF ACCOUNT</h2>
+            <div style="display:flex; justify-content:space-between; margin-bottom:30px; font-family: Arial; font-size: 13px; line-height: 1.6;">
+                <div style="width: 45%;"><div><strong>To:</strong> <span id="soa-client-name" style="text-transform: uppercase;"></span></div><div id="soa-client-addr" style="white-space:pre-wrap; margin-top:5px;"></div></div>
+                <div style="width: 45%; display: flex; flex-direction: column; align-items: flex-end; text-align:right;"><img id="soa-logo" src="" style="max-height: 80px; object-fit: contain; margin-bottom: 10px; display:none;"><div id="soa-co-name" style="font-weight:bold; font-size: 15px; text-transform: uppercase;"></div><div id="soa-co-addr" style="white-space:pre-wrap; margin-top:5px;"></div><div style="margin-top:15px;"><strong>Date:</strong> <span id="soa-date"></span></div></div>
+            </div>
+            <table class="soa-table" style="width:100%; border-collapse:collapse; border:1px solid #000; font-family: Arial;">
+                <thead><tr style="border-bottom:1px solid #000;"><th style="width: 15%;">DATE</th><th style="width: 40%;">TRANSACTION</th><th style="text-align:right; width: 15%;">DEBIT</th><th style="text-align:right; width: 15%;">CREDIT</th><th style="text-align:right; width: 15%;">BALANCE</th></tr></thead>
+                <tbody id="soa-tbody"></tbody>
+            </table>
+            <div style="border-top:1px solid #000; padding-top:15px; margin-top:0px; font-family: Arial; font-size:11px; line-height: 1.5;"><div id="soa-terms"></div><div id="soa-bank" style="margin-top:15px; font-weight:bold; white-space:pre-wrap;"></div></div>
+        </div>
+    </div>
+    <div class="floating-bar no-print"><button class="btn btn-outline" onclick="closeSOA()">⬅️ Back to Ageing</button><button class="btn btn-success" onclick="printSOA()">🖨️ Print SOA</button></div>
+</div>
+
+<div id="editor-section">
+    <div class="document-box">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 30px; border-bottom: 1px solid #000; padding-bottom: 20px;">
+            <div style="width: 50%; padding-right: 20px; text-align: left;"><img id="doc-logo" src="" style="max-height: 80px; max-width: 100%; object-fit: contain; display: block; margin-bottom:10px;"><div id="doc-co-name" style="font-size: 15px; font-weight: bold; width:100%; color:#000; margin-bottom:2px; text-transform:uppercase; text-align: left;"></div><div id="doc-co-addr" style="font-size:11px; color:#333; line-height:1.4; white-space:pre-wrap; text-align: left;"></div><div id="doc-co-tin" style="font-size:11px; color:#333; margin-top:2px; font-weight:bold; display:none; text-align: left;"></div></div>
+            <div style="width: 45%; text-align: right;"><h1 id="doc-title-display" style="font-size: 32px; margin: 0 0 15px 0; color:#000; font-weight:bold; letter-spacing:1px;">INVOICE</h1><table style="width: 230px; margin-left: auto; border-collapse:collapse; font-size:12px; text-align:right;"><tr><td style="padding:4px 10px 4px 0; font-weight:bold; color:#555;">Date :</td><td style="padding:4px 0;"><input type="date" id="doc-date" class="doc-input" style="width:105px; font-weight:bold; text-align:right;" onchange="updateDocNumber()"></td></tr><tr><td style="padding:4px 10px 4px 0; font-weight:bold; color:#555;" id="doc-ref-label">Doc No :</td><td style="padding:4px 0;"><input type="text" id="doc-no" class="doc-input" style="width:105px; font-weight:bold; text-align:right;"></td></tr><tr id="row-top-extra"><td style="padding:4px 10px 4px 0; font-weight:bold; color:#555;" id="doc-extra-label">Terms :</td><td style="padding:4px 0;"><input type="text" id="doc-extra-input" class="doc-input" style="width:105px; font-weight:bold; text-align:right;" placeholder="-"></td></tr><tr id="row-top-amount"><td style="padding:4px 10px 4px 0; font-weight:bold; color:#555;">Amount :</td><td style="padding:4px 0; font-weight:bold; color:#000; white-space:nowrap;">MYR <span id="doc-top-amount">0.00</span></td></tr></table></div>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-bottom: 25px; font-size:11px;">
+            <div style="width: 45%;"><div style="font-weight:bold; margin-bottom:5px; color:#555;" id="doc-billto-label">Bill to:</div><input type="text" id="doc-custName" class="doc-input" style="width:100%; font-size:12px; font-weight:bold; margin-bottom:2px; text-transform:uppercase;" readonly><textarea id="doc-custAddr" class="doc-textarea" rows="3" style="width:100%; font-size:11px; line-height:1.4;" oninput="document.getElementById('doc-custAddr-mirror').innerText=this.value; autoResize(this)"></textarea><div id="doc-custAddr-mirror" class="print-mirror" style="font-size:11px; line-height:1.4; white-space:pre-wrap;"></div></div>
+            <div style="width: 45%;"><div style="font-weight:bold; margin-bottom:5px; color:#555;" id="doc-proj-label">Project / Remarks:</div><textarea id="doc-project" class="doc-textarea" rows="3" style="width:100%; font-size:11px; line-height:1.4;" oninput="document.getElementById('doc-project-mirror').innerText=this.value; autoResize(this)"></textarea><div id="doc-project-mirror" class="print-mirror" style="font-size:11px; line-height:1.4; white-space:pre-wrap;"></div></div>
+        </div>
+        <div class="table-responsive" style="margin-bottom: 10px;">
+            <table style="width:100%; border-collapse:collapse; font-size:11px; border:1px solid #000;">
+                <thead><tr style="border-bottom:1px solid #000; background:#f9f9f9; color:#000;">
+                    <th style="padding:8px; text-align:left; border-right:1px solid #000;" id="th-desc">Description</th>
+                    <th style="padding:8px; text-align:center; border-right:1px solid #000; width:10%;" id="th-qty">Qty</th>
+                    <th style="padding:8px; text-align:center; border-right:1px solid #000; width:10%;" id="th-uom">U/M</th>
+                    <th style="padding:8px; text-align:right; border-right:1px solid #000; width:15%;" class="col-money col-rate" id="th-rate">Rate</th>
+                    <th style="padding:8px; text-align:right; width:15%;" class="col-money col-calc" id="th-calc">Amount</th><th class="no-print" style="width:3%;"></th>
+                </tr></thead>
+                <tbody id="doc-items"></tbody>
+            </table>
+            <button class="btn btn-add no-print" style="margin-top:10px; font-size:10px;" onclick="addDocRow()">+ Add Item Row</button>
+        </div>
+
+        <div id="doc-rm-words" style="display:none; margin-bottom: 20px; padding: 10px; border: 1px solid #000; background: #f9f9f9; font-weight: bold; font-style: italic; font-size: 11px;">
+            RINGGIT MALAYSIA: <span id="rm-words-text">ZERO ONLY</span>
+        </div>
+        
+        <div id="or-custom-footer" style="display:none; margin-top: 150px; font-family: Arial, sans-serif; font-size: 12px; width: 100%; border-top: 1px solid #000; padding-top: 15px; page-break-inside: avoid;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                <div style="width: 70%;">
+                    <table style="width:100%; border-collapse: collapse; font-size: 12px;">
+                        <tr>
+                            <td style="width: 130px; font-weight:bold; padding: 5px 0;">The Sum of MYR</td>
+                            <td style="padding: 5px 0;">: <span id="or-sum-words" style="text-transform:uppercase;"></span></td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight:bold; padding: 15px 0 5px 0;">MYR</td>
+                            <td style="font-weight:bold; padding: 15px 0 5px 0; font-size:14px;">
+                                <span style="border-bottom: 1px dashed #000; padding-bottom: 2px;" id="or-sum-digits">0.00</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 5px 0;">Cheque No. / Ref</td>
+                            <td style="padding: 5px 0;">: <span id="or-ref-details" style="text-transform:uppercase;"></span></td>
+                        </tr>
+                    </table>
+                    <div style="margin-top: 30px; font-size: 11px;">
+                        Note : This official receipt is valid upon clearance of cheque.
+                    </div>
+                </div>
+                <div style="width: 25%; text-align:center; margin-top: 50px;">
+                    <div style="border-bottom:1px solid #000; height:40px;"></div>
+                    <div style="margin-top:5px; font-size: 11px;">Issued By</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="cndn-custom-footer" style="display:none; margin-top: 150px; font-family: Arial, sans-serif; font-size: 12px; width: 100%; page-break-inside: avoid;">
+            
+            <div style="border-top: 1px solid #000; border-bottom: 1px solid #000; padding: 8px 0; display: flex; justify-content: space-between; font-weight: bold; align-items: center;">
+                <div>MYR : <span id="cndn-sum-words" style="text-transform:uppercase; margin-left: 10px;"></span></div>
+                <div style="display: flex; gap: 40px;">
+                    <div>Total Qty: <span id="cndn-total-qty">0</span></div>
+                    <div>Total : <span id="cndn-total-amt">0.00</span></div>
+                </div>
+            </div>
+            
+            <div style="margin-top: 8px; font-style: italic; font-weight: bold; color: #333; font-size: 11px;">
+                # Goods sold are not returnable. <span style="margin-left: 40px;">E. & O. E.</span>
+            </div>
+            
+            <div style="font-weight: bold; margin-bottom: 30px; line-height: 1.6; margin-top: 30px;">
+                *Bank Name : <span id="cndn-bank-name-display">-</span><br>
+                *Bank Account No. : <span id="cndn-bank-ac-display">-</span>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: flex-end;">
+                <div style="width: 45%; display: flex; flex-direction: column; justify-content: space-between;">
+                    <div style="margin-bottom: 50px;">Received By</div>
+                    <div style="border-top: 1px solid #000; padding-top: 5px; width: 85%;">Customer's Chop & Signature</div>
+                </div>
+                
+                <div style="width: 45%; display: flex; flex-direction: column; justify-content: space-between; align-items: flex-end;">
+                    <div style="font-weight: bold; width: 100%; text-align: right; margin-bottom: 50px;">For <span id="cndn-co-name-sign">COMPANY NAME</span></div>
+                    <div style="border-top: 1px solid #000; padding-top: 5px; width: 85%; text-align: center;">Authorized Signature</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="bottom-general-section" class="non-or" style="display:flex; justify-content:space-between; margin-top: 150px; padding-top: 5px; border-top: 1px solid #000; font-size:11px; page-break-inside: avoid;">
+            <div style="width: 50%;">
+                <div style="font-weight:bold; margin-bottom:5px; color:#555;" id="doc-notes-label">Notes & Terms:</div>
+                <textarea id="doc-terms" class="doc-textarea" rows="4" style="width:100%; font-size:11px; line-height:1.5;" oninput="document.getElementById('doc-terms-mirror').innerText=this.value; autoResize(this)"></textarea>
+                <div id="doc-terms-mirror" class="print-mirror" style="font-size:11px; line-height:1.5; white-space:pre-wrap;"></div>
+                
+                <div id="doc-bank-info" style="display:none; margin-top:15px; font-size:11px; border-top:1px solid #eee; padding-top:10px;">
+                    
+                    <div id="bank-selector-container" class="no-print" style="display:none; margin-bottom:10px; background:#e0f7fa; padding:10px; border-radius:4px; border:1px dashed #00bcd4;">
+                        <label style="font-weight:bold; color:#00796b; display:block; margin-bottom:5px;">Select Payment Account:</label>
+                        <select id="doc-bank-selector" class="doc-input" style="width:100%; font-weight:bold; background:white; border:1px solid #ccc; padding:4px; border-radius:4px;" onchange="changeDocBank(this)">
+                            <option value="">-- Default Account --</option>
+                        </select>
+                    </div>
+
+                    <div style="font-weight:bold; color:#555; margin-bottom:5px; text-transform:uppercase;">Remittance / Payment Details:</div>
+                    <table style="width:100%; border-collapse:collapse;">
+                        <tr id="row-display-bank-holder" style="display:none;">
+                            <td style="width:90px; padding:2px 0;">Account Name</td>
+                            <td style="width:10px;">:</td>
+                            <td><strong id="display-bank-holder">-</strong></td>
+                        </tr>
+                        <tr>
+                            <td style="width:90px; padding:2px 0;">Bank Name</td>
+                            <td style="width:10px;">:</td>
+                            <td><strong id="display-bank-name">-</strong></td>
+                        </tr>
+                        <tr>
+                            <td style="padding:2px 0;">Account No.</td>
+                            <td>:</td>
+                            <td><strong id="display-bank-ac">-</strong></td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div id="doc-auto-sign" style="margin-top:25px; font-size:11px; color:#000; font-style:italic;">Generated automatically. No signature is required.</div>
+                <div id="do-signatures" style="display:none; justify-content:space-between; margin-top:40px; text-align:center;">
+                    <div style="width: 30%;"><div style="border-bottom:1px solid #000; height:40px;"></div><div style="margin-top:5px; font-weight:bold;">Issued By</div></div>
+                    <div style="width: 30%;"><div style="border-bottom:1px solid #000; height:40px;"></div><div style="margin-top:5px; font-weight:bold;">Transporter</div></div>
+                    <div style="width: 30%;"><div style="border-bottom:1px solid #000; height:40px;"></div><div style="margin-top:5px; font-weight:bold;">Received By</div></div>
+                </div>
+                <div id="quo-signature" style="display:none; margin-top:40px; border-top:1px dashed #ccc; padding-top:10px;"><div style="font-weight:bold; margin-bottom:75px;">Customer Acceptance:</div><div style="width:200px; border-bottom:1px solid #000;"></div><div style="margin-top:5px;">Name / Cop:</div></div>
+                <div id="or-signature" style="display:none; margin-top:50px; text-align:left;">
+                    <div style="display:inline-block; text-align:center; width:200px;">
+                        <div style="border-bottom:1px solid #000; height:40px;"></div>
+                        <div style="margin-top:5px; font-weight:bold; font-size:11px;">Authorised Signature</div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="width: 40%; display: flex; justify-content: flex-end; margin-left: auto;" id="doc-totals-box">
+                <table style="width: 250px; border-collapse:collapse; font-size:12px; font-weight:bold; color:#000;">
+                    <tr><td style="padding:6px 0; text-align:left; color:#555;">Sub Total</td><td style="padding:6px 10px 6px 0; text-align:right;">RM <span id="doc-subtotal">0.00</span></td></tr>
+                    <tr id="doc-discountRow"><td style="padding:6px 0; text-align:left; color:#e74c3c;" id="doc-disc-label">Discount</td><td style="padding:6px 10px 6px 0; text-align:right; color:#e74c3c;">- RM <span id="doc-disc-print" style="display:none; font-size:12px; font-weight:bold;">0.00</span><input type="number" id="doc-discount" class="doc-input" value="0.00" step="0.01" style="width:75px; text-align:right; font-weight:bold; color:#e74c3c; font-family:inherit; font-size:12px;" oninput="calcUnifiedDoc()"></td></tr>
+                    <tr style="border-top:1px solid #000;"><td style="padding:10px 0; text-align:left; font-size:14px;">Total</td><td style="padding:10px 10px 10px 0; text-align:right; font-size:14px;">RM <span id="doc-total">0.00</span></td></tr>
+                </table>
+            </div>
+        </div>
+
+    <div class="floating-bar no-print" id="editor-bar">
+        <button class="btn btn-outline" onclick="closeEditor()">❌ Cancel</button>
+        <button class="btn btn-primary" onclick="saveUnifiedDoc()" id="btn-save-doc">💾 Save Document</button>
+        <button class="btn btn-success" onclick="printUnifiedDoc()">🖨️ Print Document</button>
+    </div>
+</div>
+
+<datalist id="db-item-list"></datalist>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, getDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+    // INI CONFIG DATABASE BARU AWAK (SISTEM 313)
+    const firebaseConfig = {
+        apiKey: "AIzaSyCjJab1uItHC62ZfZVD5nMtZZtm76fc46Y",
+        authDomain: "sistem313-8bba4.firebaseapp.com",
+        projectId: "sistem313-8bba4",
+        storageBucket: "sistem313-8bba4.firebasestorage.app",
+        messagingSenderId: "613290008986",
+        appId: "1:613290008986:web:a16e7141ab8f0e5dd89a23"
+    };
+
+    // 1. FUNGSI TARIK PROFIL SYARIKAT (LOGO, NAMA, BANK, TIN)
+    window.loadCompanyProfileFromCloud = async function() {
+        if(!window.currentCompanyId || !window.db) return;
+        try {
+            const docSnap = await window.getDoc(window.doc(window.db, "companies", window.currentCompanyId));
+            if (docSnap.exists()) {
+                let data = docSnap.data();
+                
+                let def = {
+                    name: data.company_name || "COMPANY NAME",
+                    tin: data.tin_number || "", 
+                    addr: data.address || "",
+                    bank: (data.bank_name ? data.bank_name + " - " : "") + (data.bank_ac || ""),
+                    bankName: data.bank_name || "",
+                    bankAc: data.bank_ac || "",
+                    logo: data.logo || "",
+                    logoHeight: data.logoHeight || 120,
+                    bankHolder: data.bank_holder || "", // <-- TAMBAH INI: Untuk tarik nama pemilik default
+                    bankAccounts: data.bankAccounts || [] // <-- TAMBAH INI: Untuk tarik senarai bank dari cloud
+                };
+                
+                localStorage.setItem('sys_companyDefaults', JSON.stringify(def));
+                
+                // Update HTML Invois serta-merta
+                let logoEl = document.getElementById('doc-logo');
+                if(logoEl && def.logo) { 
+                    logoEl.src = def.logo; 
+                    logoEl.style.display = 'block';
+                    logoEl.style.height = def.logoHeight + 'px'; 
+                }
+                
+                let coNameEl = document.getElementById('doc-co-name');
+                if(coNameEl) coNameEl.innerText = def.name;
+                
+                let coAddrEl = document.getElementById('doc-co-addr');
+                if(coAddrEl) coAddrEl.innerText = def.addr;
+
+                // KOD BARU: Masukkan TIN jika ada, sorok jika kosong
+                let coTinEl = document.getElementById('doc-co-tin');
+                if(coTinEl) {
+                    if (def.tin.trim() !== "") {
+                        coTinEl.innerText = "TIN: " + def.tin;
+                        coTinEl.style.display = 'block';
+                    } else {
+                        coTinEl.style.display = 'none';
+                    }
+                }
+            }
+        } catch (error) {
+            console.error("Gagal muat turun profil syarikat:", error);
+        }
+    };
+    
+    const app = initializeApp(firebaseConfig);
+    window.auth = getAuth(app); 
+    window.db = getFirestore(app); 
+    window.setDoc = setDoc; 
+    window.getDoc = getDoc; 
+    window.doc = doc;
+    window.collection = collection; // PENTING: Untuk tarik data Klien & Item
+    window.getDocs = getDocs;       // PENTING: Untuk tarik senarai data
+
+    // PANTAU LOGIN & TARIK DATA DARI CLOUD
+    onAuthStateChanged(window.auth, async (user) => {
+        if (user) { 
+            window.currentUserUID = user.uid; 
+            try {
+                const userDoc = await getDoc(doc(window.db, "users", user.uid));
+                if (userDoc.exists()) {
+                    let userData = userDoc.data();
+                    window.currentCompanyId = userData.company_id; 
+                    
+                    if (userData.role === 'staff') { document.body.classList.add('role-staff'); } 
+                    else { document.body.classList.remove('role-staff'); }
+                    
+                    // Gunakan cara selamat (periksa kalau kotak tu wujud dulu)
+                    let loadingBox = document.getElementById('loadingOverlay');
+                    if (loadingBox) loadingBox.style.display = 'flex';
+                    
+                    if(window.pullDataFromCloud) await window.pullDataFromCloud();
+                    if(window.loadCompanyProfileFromCloud) await window.loadCompanyProfileFromCloud();
+                    if(window.loadDatabaseFromCloud) await window.loadDatabaseFromCloud();
+                    
+                    if (loadingBox) loadingBox.style.display = 'none';
+                    
+                    if(window.initApp) window.initApp(); 
+                }
+            } catch(e) { console.error("Gagal baca data user:", e); }
+        } 
+        else { 
+            localStorage.clear(); 
+            window.location.href = 'index.html'; 
+        }
+    });
+</script>
+
+<script>
+    // ==============================================================
+    // ENJIN SMART-DECRYPT 
+    // ==============================================================
+    const originalSetItem = localStorage.setItem.bind(localStorage);
+    const originalGetItem = localStorage.getItem.bind(localStorage);
+    const SECRET_KEY = "TigaLimaProPremium";
+
+    function encryptData(data) { return "ENC2:" + btoa(encodeURIComponent(data)); }
+    function decryptData(data) {
+        try {
+            if(!data) return null;
+            if(data.startsWith("ENC2:")) return decodeURIComponent(atob(data.replace("ENC2:", "")));
+            if(data.startsWith("ENC:")) {
+                let raw = atob(data.replace("ENC:", "")); let xor = "";
+                for(let i=0; i<raw.length; i++) xor += String.fromCharCode(raw.charCodeAt(i) ^ SECRET_KEY.charCodeAt(i % SECRET_KEY.length));
+                return decodeURIComponent(escape(atob(xor)));
+            }
+            return data;
+        } catch(e) { return "[]"; }
+    }
+
+   window.forceSyncToFirebase = async function() {
+        if(!window.currentCompanyId || !window.db) return; // Tukar ke currentCompanyId
+        
+        let dataToSave = {};
+        for(let i=0; i<localStorage.length; i++) {
+            let key = localStorage.key(i);
+            if(key.startsWith('sys_')) { dataToSave[key] = originalGetItem(key); }
+        }
+        
+        try {
+            // Hantar ke folder Syarikat (Supaya Bos & Staf kongsi fail yang sama)
+            const docRef = window.doc(window.db, "companies", window.currentCompanyId, "system_backup", "local_data");
+            await window.setDoc(docRef, dataToSave, { merge: true }); 
+        } catch(e) { console.error("Sync Error:", e); }
+    };
+
+    window.initApp = function() {
+        let def = JSON.parse(localStorage.getItem('sys_companyDefaults')) || {};
+        
+        // Set Logo Syarikat
+        let logoEl = document.getElementById('doc-logo');
+        if(logoEl) { 
+            logoEl.src = def.logo || ''; 
+            logoEl.style.height = (def.logoHeight || 120) + 'px'; 
+        }
+        
+        // Set Nama & Alamat Syarikat di Dokumen
+        if(document.getElementById('doc-co-name')) document.getElementById('doc-co-name').innerText = def.name || 'COMPANY NAME';
+        if(document.getElementById('doc-co-addr')) document.getElementById('doc-co-addr').innerText = def.addr || '';
+
+        // KOD BARU: Set TIN LHDN di Dokumen
+        let coTinEl = document.getElementById('doc-co-tin');
+        if(coTinEl) {
+            if (def.tin && def.tin.trim() !== "") {
+                coTinEl.innerText = "TIN: " + def.tin;
+                coTinEl.style.display = 'block';
+            } else {
+                coTinEl.style.display = 'none';
+            }
+        }
+
+        // Muatkan senarai CRM & Item
+        toggleRightPanel('CLIENTS');
+        loadItemDatalist(); 
+
+        // Auto-buka dokumen jika diklik dari Cashbook
+        const urlParams = new URLSearchParams(window.location.search);
+        const viewDoc = urlParams.get('view');
+        if(viewDoc) {
+            setTimeout(() => editDocument('OR', viewDoc), 300);
+        }
+    };
+
+    window.pullDataFromCloud = async function() {
+    if(!window.currentCompanyId || !window.db) return;
+    
+    let loadEl = document.getElementById('loadingOverlay');
+    try {
+        if(loadEl) loadEl.style.display = 'flex';
+        
+        // Tarik data backup syarikat dari Cloud
+        const snap = await window.getDoc(window.doc(window.db, "companies", window.currentCompanyId, "system_backup", "local_data"));
+        
+        if (snap.exists()) {
+            let cloudData = snap.data();
+            for (let key in cloudData) {
+                originalSetItem(key, cloudData[key]); // Susun masuk balik ke dalam memori browser
+            }
+        }
+        if(loadEl) loadEl.style.display = 'none';
+    } catch (error) {
+        console.error("Gagal muat turun data syarikat:", error);
+        if(loadEl) loadEl.style.display = 'none';
+    }
+};
+
+    Storage.prototype.setItem = function(key, value) {
+        if(key.startsWith('sys_')) { 
+            originalSetItem(key, encryptData(value));
+            clearTimeout(window.syncTimer);
+            window.syncTimer = setTimeout(() => { window.forceSyncToFirebase(); }, 1500); 
+        } else { originalSetItem(key, value); }
+    };
+    
+    Storage.prototype.getItem = function(key) {
+        let value = originalGetItem(key);
+        if(key.startsWith('sys_') && value) { 
+            let dec = decryptData(value);
+            if(!dec && key.includes('History')) return "[]"; 
+            return dec;
+        }
+        return value;
+    };
+
+    let currentClient = null; let activeDocMode = null; let editingDocId = null;  
+
+    
+
+    function autoResize(el) { if(el) { el.style.height = 'auto'; el.style.height = (el.scrollHeight + 5) + 'px'; } }
+    function setAndMirror(id, val) { const el = document.getElementById(id); if (el) { el.value = val; const mirror = document.getElementById(id + '-mirror'); if (mirror) { mirror.innerText = val; } } }
+    function formatDate(date) { let offset = date.getTimezoneOffset() * 60000; return new Date(date - offset).toISOString().slice(0,10); }
+
+    // --- VARIABEL GLOBAL UNTUK MASTERLIST ---
+    let allDocsMasterData = [];
+    let currentDocPage = 1;
+    const docsPerPage = 15;
+
+    // --- VARIABEL GLOBAL UNTUK KLIEN & ORDERS ---
+    let allClientsMasterData = [];
+    let currentClientPage = 1;
+    const clientsPerPage = 10;
+
+    let allOrdersMasterData = [];
+    let currentOrderPage = 1;
+    const ordersPerPage = 10;
+
+    window.toggleRightPanel = function(mode) {
+        let btnClient = document.getElementById('btn-tab-clients');
+        let btnOrder = document.getElementById('btn-tab-orders');
+        let btnAllDocs = document.getElementById('btn-tab-alldocs');
+        
+        let viewClient = document.getElementById('view-clients');
+        let viewOrder = document.getElementById('view-orders');
+        let viewAllDocs = document.getElementById('view-alldocs');
+        
+        let search = document.getElementById('search-data');
+        let title = document.getElementById('right-panel-title');
+
+        if(btnClient) { btnClient.className = 'btn btn-outline'; btnClient.style.border = 'none'; }
+        if(btnOrder) { btnOrder.className = 'btn btn-outline'; btnOrder.style.border = 'none'; }
+        if(btnAllDocs) { btnAllDocs.className = 'btn btn-outline'; btnAllDocs.style.border = 'none'; }
+
+        viewClient.style.display = 'none';
+        viewOrder.style.display = 'none';
+        if(viewAllDocs) viewAllDocs.style.display = 'none';
+
+        if(mode === 'CLIENTS') {
+            btnClient.className = 'btn btn-primary';
+            viewClient.style.display = 'block';
+            title.innerText = '👥 Client Database';
+            search.placeholder = '🔍 Search client...';
+            search.onkeyup = function() { currentClientPage = 1; renderClientsTable(); };
+            loadCRM();
+        } else if (mode === 'ORDERS') {
+            btnOrder.className = 'btn btn-primary';
+            viewOrder.style.display = 'block';
+            title.innerText = '📥 Master Customer Orders';
+            search.placeholder = '🔍 Search order no / client...';
+            search.onkeyup = function() { currentOrderPage = 1; renderOrdersTable(); };
+            loadCustomerOrders();
+        } else if (mode === 'ALLDOCS') {
+            btnAllDocs.className = 'btn btn-primary';
+            viewAllDocs.style.display = 'block';
+            title.innerText = '📑 All Documents Masterlist';
+            search.placeholder = '🔍 Search Doc No / Client...';
+            search.onkeyup = function() { currentDocPage = 1; renderAllDocsTable(); };
+            loadAllDocuments();
+        }
+    };
+
+    // ==========================================
+    // --- ENJIN CLIENTS LIST ---
+    // ==========================================
+    window.loadCRM = function() {
+        let clients = JSON.parse(localStorage.getItem('sys_db_clients') || "[]");
+        let invoices = JSON.parse(localStorage.getItem('sys_invoiceHistory') || "[]");
+        let cndns = JSON.parse(localStorage.getItem('sys_cnHistory') || "[]"); 
+
+        // --- KOD BARU: AUTO-ASSIGN CUSTOMER CODE UNTUK KLIEN LAMA ---
+        let needsSave = false;
+        let highestNum = 0;
+        
+        // 1. Cari nombor kod paling tinggi yang dah wujud (supaya tak bertindih)
+        clients.forEach(c => {
+            if (c.code && c.code.startsWith('C-')) {
+                let num = parseInt(c.code.replace('C-', ''));
+                if (!isNaN(num) && num > highestNum) highestNum = num;
+            }
+        });
+
+        // 2. Berikan kod baru kepada klien yang masih 'NO-CODE'
+        clients.forEach(c => {
+            if (!c.code || c.code.trim() === "") {
+                highestNum++;
+                c.code = "C-" + highestNum.toString().padStart(3, '0');
+                needsSave = true;
+            }
+        });
+
+        // 3. Jika ada perubahan, simpan semula ke dalam memori
+        if (needsSave) {
+            localStorage.setItem('sys_db_clients', JSON.stringify(clients));
+        }
+        // --- TAMAT KOD AUTO-ASSIGN ---
+
+        allClientsMasterData = [];
+
+        clients.forEach(c => {
+            let invTot = 0, paidTot = 0, cnTot = 0, dnTot = 0;
+            invoices.forEach(inv => {
+                if(inv.custName === c.name || inv.cName === c.name) {
+                    invTot += Math.max(0, (parseFloat(inv.total)||0) - (parseFloat(inv.discount)||0));
+                    if(inv.payments) inv.payments.forEach(p => paidTot += parseFloat(p.amount)||0);
+                }
+            });
+            cndns.forEach(cn => {
+                if(cn.cName === c.name || cn.custName === c.name) {
+                    if(cn.id && cn.id.startsWith('CN-')) cnTot += parseFloat(cn.total)||0;
+                    if(cn.id && cn.id.startsWith('DN-')) dnTot += parseFloat(cn.total)||0;
+                }
+            });
+            
+            let outstanding = invTot + dnTot - paidTot - cnTot;
+            
+            allClientsMasterData.push({
+                id: c.id, name: c.name, attn: c.attn || '-', phone: c.phone || '-',
+                outstanding: outstanding, rawData: c
+            });
+        });
+
+        currentClientPage = 1;
+        renderClientsTable();
+    };
+
+    window.renderClientsTable = function() {
+        let searchQ = document.getElementById('search-data').value.toUpperCase();
+        let sortBy = document.getElementById('sort-client-by') ? document.getElementById('sort-client-by').value : 'NAME_ASC';
+
+        // 1. Filter
+        let filtered = allClientsMasterData.filter(c => c.name.toUpperCase().includes(searchQ) || c.phone.toUpperCase().includes(searchQ) || c.attn.toUpperCase().includes(searchQ));
+
+        // 2. Sort
+        filtered.sort((a,b) => {
+            if(sortBy === 'CODE_ASC') return (a.rawData.code || '').localeCompare(b.rawData.code || '');
+            if(sortBy === 'CODE_DESC') return (b.rawData.code || '').localeCompare(a.rawData.code || '');
+            if(sortBy === 'NAME_ASC') return a.name.localeCompare(b.name);
+            if(sortBy === 'NAME_DESC') return b.name.localeCompare(a.name);
+            if(sortBy === 'BAL_DESC') return b.outstanding - a.outstanding;
+            if(sortBy === 'BAL_ASC') return a.outstanding - b.outstanding;
+            return 0;
+        });
+
+        // 3. Pagination
+        let totalPages = Math.ceil(filtered.length / clientsPerPage) || 1;
+        if(currentClientPage > totalPages) currentClientPage = totalPages;
+        if(currentClientPage < 1) currentClientPage = 1;
+
+        document.getElementById('lbl-page-clients').innerText = currentClientPage;
+        document.getElementById('lbl-total-clients').innerText = totalPages;
+        document.getElementById('btn-prev-clients').disabled = currentClientPage === 1;
+        document.getElementById('btn-next-clients').disabled = currentClientPage === totalPages;
+
+        let startIdx = (currentClientPage - 1) * clientsPerPage;
+        let pageData = filtered.slice(startIdx, startIdx + clientsPerPage);
+
+        // 4. Render HTML
+        let tbody = document.getElementById('client-list-body');
+        let html = "";
+
+        pageData.forEach(c => {
+            let outBadge = c.outstanding > 0 ? `<span style="color:#e74c3c; font-weight:800;">RM ${c.outstanding.toFixed(2)}</span>` 
+                         : c.outstanding < 0 ? `<span style="color:#2980b9; font-weight:800;">ADVANCE: RM ${Math.abs(c.outstanding).toFixed(2)}</span>`
+                         : `<span style="color:#27ae60; font-weight:700;">RM 0.00</span>`;
+                         
+            // KOD PENYELAMAT: Tukar simbol khas supaya HTML tak pecah
+            let safeName = c.name ? c.name.replace(/'/g, "\\'").replace(/"/g, "&quot;") : "";
+            let safeJSON = JSON.stringify(c.rawData).replace(/'/g, "&#39;").replace(/"/g, "&quot;");
+            
+            html += `<tr>
+                <td><span style="background:#2c3e50; color:white; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:bold; margin-right:5px;">${c.rawData.code || 'NO-CODE'}</span> <strong>${c.name}</strong><br><small style="color:#777; margin-top:3px; display:inline-block;">${c.attn}</small></td>
+                <td>${c.phone}</td>
+                <td style="text-align:right;">${outBadge}</td>
+                <td style="text-align:center; white-space:nowrap;">
+                    <button class="btn btn-outline" style="padding:6px 10px; font-size:11px; margin-right:2px;" onclick="editClient('${c.id}', '${safeName}')">✏️ Edit</button>
+                    <button class="btn btn-remove admin-only" style="padding:6px 10px; font-size:11px; margin-right:5px;" onclick="deleteClient('${c.id}', '${safeName}')">🗑️ Del</button>
+                    <button class="btn btn-primary" style="padding:6px 12px; font-size:11px;" onclick="openVault(${safeJSON})">📂 Vault</button>
+                </td>
+            </tr>`;
+        });
+
+        tbody.innerHTML = html === "" ? "<tr><td colspan='4' style='text-align:center; padding:20px; color:#999;'>No clients found.</td></tr>" : html;
+    };
+
+    window.changePageClients = function(dir) { currentClientPage += dir; renderClientsTable(); };
+
+
+    // ==========================================
+    // --- ENJIN CUSTOMER ORDERS LIST ---
+    // ==========================================
+    window.loadCustomerOrders = function() {
+        let cpos = JSON.parse(localStorage.getItem('sys_cpoHistory') || "[]");
+        let invs = JSON.parse(localStorage.getItem('sys_invoiceHistory') || "[]");
+        let dos = JSON.parse(localStorage.getItem('sys_doHistory') || "[]");
+
+        allOrdersMasterData = [];
+
+        cpos.forEach(d => {
+            let relatedInv = invs.find(inv => (inv.project && inv.project.includes(d.id)));
+            let relatedDO = dos.find(doDoc => (doDoc.poRef && doDoc.poRef === d.id) || (doDoc.project && doDoc.project.includes(d.id)));
+            
+            allOrdersMasterData.push({
+                id: d.id, date: d.date, amount: parseFloat(d.total) || 0,
+                client: d.cName || d.custName || '-', project: d.project || '-',
+                hasDO: relatedDO, hasInv: relatedInv, rawData: d
+            });
+        });
+
+        currentOrderPage = 1;
+        renderOrdersTable();
+    };
+
+    window.renderOrdersTable = function() {
+        let searchQ = document.getElementById('search-data').value.toUpperCase();
+        let sortBy = document.getElementById('sort-order-by') ? document.getElementById('sort-order-by').value : 'DATE_DESC';
+
+        // 1. Filter
+        let filtered = allOrdersMasterData.filter(o => o.id.toUpperCase().includes(searchQ) || o.client.toUpperCase().includes(searchQ) || o.project.toUpperCase().includes(searchQ));
+
+        // 2. Sort
+        filtered.sort((a,b) => {
+            let dateA = new Date(a.date).getTime(); let dateB = new Date(b.date).getTime();
+            if(sortBy === 'DATE_DESC') return dateB - dateA;
+            if(sortBy === 'DATE_ASC') return dateA - dateB;
+            if(sortBy === 'AMT_DESC') return b.amount - a.amount;
+            return 0;
+        });
+
+        // 3. Pagination
+        let totalPages = Math.ceil(filtered.length / ordersPerPage) || 1;
+        if(currentOrderPage > totalPages) currentOrderPage = totalPages;
+        if(currentOrderPage < 1) currentOrderPage = 1;
+
+        document.getElementById('lbl-page-orders').innerText = currentOrderPage;
+        document.getElementById('lbl-total-orders').innerText = totalPages;
+        document.getElementById('btn-prev-orders').disabled = currentOrderPage === 1;
+        document.getElementById('btn-next-orders').disabled = currentOrderPage === totalPages;
+
+        let startIdx = (currentOrderPage - 1) * ordersPerPage;
+        let pageData = filtered.slice(startIdx, startIdx + ordersPerPage);
+
+        // 4. Render HTML
+        let tbody = document.getElementById('order-list-body');
+        let html = "";
+
+        pageData.forEach(o => {
+            let actions = "";
+            if(o.hasDO) { actions += `<button class="btn btn-outline" style="padding:4px 8px; font-size:10px; margin-right:5px; background:#8e44ad; color:white; border:none;" onclick="editDocument('DO', '${o.hasDO.id}')">📄 Open D.O.</button>`; } 
+            else { actions += `<button class="btn btn-outline" style="padding:4px 8px; font-size:10px; margin-right:5px; background:#9b59b6; color:white; border:none;" onclick="convertPipeline('CPO', '${o.id}', 'DO')">🚚 To D.O.</button>`; }
+            
+            if(o.hasInv) { actions += `<button class="btn btn-success" style="padding:4px 8px; font-size:10px; background:#27ae60;" onclick="editDocument('INV', '${o.hasInv.id}')">📄 Open Invoice</button>`; } 
+            else { actions += `<button class="btn btn-success" style="padding:4px 8px; font-size:10px;" onclick="convertPipeline('CPO', '${o.id}', 'INV')">📄 To Invoice</button>`; }
+            
+            let statusBadge = o.hasInv ? `<span style="color:#27ae60; font-weight:bold;">COMPLETED</span>` : `<span style="color:#f39c12; font-weight:bold;">PENDING</span>`;
+
+            html += `<tr>
+                <td>${o.date}</td>
+                <td><strong>${o.id}</strong><br><small>${statusBadge}</small></td>
+                <td><strong>${o.client}</strong><br><small style="color:#777;">${o.project}</small></td>
+                <td style="text-align:right; font-weight:bold;">${o.amount.toFixed(2)}</td>
+                <td style="text-align:center; white-space:nowrap;">${actions}</td>
+            </tr>`;
+        });
+
+        tbody.innerHTML = html === "" ? "<tr><td colspan='5' style='text-align:center; padding:30px; color:#999;'>No customer orders found.</td></tr>" : html;
+    };
+
+    window.changePageOrders = function(dir) { currentOrderPage += dir; renderOrdersTable(); };
+
+    window.loadAllDocuments = function() {
+        let invs = JSON.parse(localStorage.getItem('sys_invoiceHistory') || "[]");
+        let quos = JSON.parse(localStorage.getItem('sys_quoHistory') || "[]");
+        let cpos = JSON.parse(localStorage.getItem('sys_cpoHistory') || "[]");
+        let dos = JSON.parse(localStorage.getItem('sys_doHistory') || "[]");
+        let cndns = JSON.parse(localStorage.getItem('sys_cnHistory') || "[]");
+        let ors = JSON.parse(localStorage.getItem('sys_orHistory') || "[]");
+
+        allDocsMasterData = [];
+        
+        invs.forEach(x => allDocsMasterData.push({ type: 'INV', no: x.id, date: x.date, client: x.custName || x.cName, amount: Math.max(0, (parseFloat(x.total)||0) - (parseFloat(x.discount)||0)) }));
+        quos.forEach(x => allDocsMasterData.push({ type: 'QUO', no: x.id, date: x.date, client: x.custName || x.cName, amount: parseFloat(x.total)||0 }));
+        cpos.forEach(x => allDocsMasterData.push({ type: 'CPO', no: x.id, date: x.date, client: x.custName || x.cName, amount: parseFloat(x.total)||0 }));
+        dos.forEach(x => allDocsMasterData.push({ type: 'DO', no: x.id, date: x.date, client: x.custName || x.cName, amount: 0 }));
+        cndns.forEach(x => allDocsMasterData.push({ type: x.type && x.type.includes('CREDIT') ? 'CN' : 'DN', no: x.id, date: x.date, client: x.custName || x.cName, amount: parseFloat(x.total)||0 }));
+        ors.forEach(x => allDocsMasterData.push({ type: 'OR', no: x.id, date: x.date, client: x.custName || x.cName, amount: parseFloat(x.total)||0 }));
+
+        currentDocPage = 1;
+        renderAllDocsTable();
+    };
+
+    window.renderAllDocsTable = function() {
+        let filterType = document.getElementById('filter-doc-type').value;
+        let searchQ = document.getElementById('search-data').value.toUpperCase();
+        
+        // Dapatkan nilai dari dropdown Sorting baru
+        let sortBy = document.getElementById('sort-doc-by') ? document.getElementById('sort-doc-by').value : 'DATE_DESC';
+
+        // 1. Saring Data (Filter & Search)
+        let filtered = allDocsMasterData.filter(d => {
+            let matchType = (filterType === 'ALL') || (d.type === filterType) || (filterType === 'CNDN' && (d.type === 'CN' || d.type === 'DN'));
+            let matchSearch = (d.no.toUpperCase().includes(searchQ) || (d.client && d.client.toUpperCase().includes(searchQ)));
+            return matchType && matchSearch;
+        });
+
+        // 2. Enjin Susunan (Sorting Logic)
+        filtered.sort((a, b) => {
+            let dateA = new Date(a.date).getTime();
+            let dateB = new Date(b.date).getTime();
+            let numA = parseInt(a.no.replace(/\D/g, '')) || 0;
+            let numB = parseInt(b.no.replace(/\D/g, '')) || 0;
+
+            if (sortBy === 'DATE_DESC') { // Tarikh Paling Baru di atas
+                if(dateB === dateA) return numB - numA;
+                return dateB - dateA;
+            } 
+            else if (sortBy === 'DATE_ASC') { // Tarikh Paling Lama di atas
+                if(dateA === dateB) return numA - numB;
+                return dateA - dateB;
+            } 
+            else if (sortBy === 'DOC_DESC') { // Nombor Dokumen Paling Besar di atas
+                if(numB === numA) return dateB - dateA;
+                return numB - numA;
+            } 
+            else if (sortBy === 'DOC_ASC') { // Nombor Dokumen Paling Kecil di atas
+                if(numA === numB) return dateA - dateB;
+                return numA - numB;
+            }
+            return 0;
+        });
+
+        // 3. Kira Mukasurat (Pagination)
+        let totalPages = Math.ceil(filtered.length / docsPerPage) || 1;
+        if (currentDocPage > totalPages) currentDocPage = totalPages;
+        if (currentDocPage < 1) currentDocPage = 1;
+
+        document.getElementById('lbl-page-docs').innerText = currentDocPage;
+        document.getElementById('lbl-total-docs').innerText = totalPages;
+        document.getElementById('btn-prev-docs').disabled = currentDocPage === 1;
+        document.getElementById('btn-next-docs').disabled = currentDocPage === totalPages;
+
+        let startIdx = (currentDocPage - 1) * docsPerPage;
+        let pageData = filtered.slice(startIdx, startIdx + docsPerPage);
+
+        // 4. Bina Jadual
+        let tbody = document.getElementById('alldocs-list-body');
+        let html = "";
+        let colorMap = {'INV':'#2ecc71', 'QUO':'#3498db', 'CPO':'#f39c12', 'DO':'#9b59b6', 'CN':'#e74c3c', 'DN':'#8e44ad', 'OR':'#1abc9c'};
+
+        pageData.forEach(d => {
+            let badge = `<span style="background:${colorMap[d.type]||'#555'}; color:white; padding:2px 6px; border-radius:3px; font-size:9px; font-weight:bold;">${d.type}</span>`;
+            let actions = `<button class="btn btn-outline" style="padding:4px 8px; font-size:10px; margin-right:5px;" onclick="editDocument('${d.type}', '${d.no}')">📄 View</button>`;
+            actions += `<button class="btn btn-remove admin-only" style="padding:4px 8px; font-size:10px; margin-right:5px; background:#e74c3c; color:white; border:none;" onclick="deleteDocument('${d.type}', '${d.no}')">🗑️ Del</button>`;
+            
+            html += `<tr style="border-bottom:1px solid #eee;">
+                <td><strong>${d.no}</strong></td>
+                <td>${d.date}</td>
+                <td>${badge}</td>
+                <td style="max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${d.client || '<i style="color:#aaa;">- Tiada Nama -</i>'}</td>
+                <td style="text-align:right; font-weight:bold;">${d.amount > 0 ? d.amount.toFixed(2) : '-'}</td>
+                <td style="text-align:center; white-space:nowrap;">${actions}</td>
+            </tr>`;
+        });
+
+        tbody.innerHTML = html === "" ? "<tr><td colspan='6' style='text-align:center; padding:30px; color:#999;'>Tiada dokumen ditemui.</td></tr>" : html;
+    };
+
+    window.changePageDocs = function(dir) {
+        currentDocPage += dir;
+        renderAllDocsTable();
+    };
+
+    window.filterTableData = function() {
+        let input = document.getElementById('search-data').value.toUpperCase(); 
+        let viewClient = document.getElementById('view-clients').style.display !== 'none';
+        let tableId = viewClient ? 'client-table' : 'order-table';
+        let tr = document.getElementById(tableId).getElementsByTagName('tr');
+        
+        for (let i = 1; i < tr.length; i++) {
+            let td = tr[i].getElementsByTagName('td');
+            let rowText = "";
+            for(let j=0; j<td.length; j++) { rowText += td[j].textContent || td[j].innerText; }
+            tr[i].style.display = rowText.toUpperCase().indexOf(input) > -1 ? "" : "none"; 
+        }
+    };
+
+    window.editClient = function(clientId, clientName) {
+        let clients = JSON.parse(localStorage.getItem('sys_db_clients') || "[]");
+        let c = clients.find(x => x.id === clientId || x.name === clientName);
+        if(!c) return;
+        
+        document.getElementById('reg-id').value = c.id || c.name; 
+        document.getElementById('reg-code').value = c.code || ''; // Tarik Customer Code
+        document.getElementById('reg-name').value = c.name; 
+        document.getElementById('reg-attn').value = c.attn || ''; 
+        document.getElementById('reg-phone').value = c.phone || ''; 
+        document.getElementById('reg-addr').value = c.addr || ''; 
+        document.getElementById('reg-terms').value = c.terms || '';
+        
+        document.getElementById('form-title').innerHTML = "✏️ Edit Client Data"; 
+        let btnSave = document.getElementById('btn-save-client'); 
+        btnSave.innerHTML = "💾 Update Client"; 
+        btnSave.classList.replace('btn-success', 'btn-warning'); 
+        document.getElementById('btn-cancel-edit').style.display = "block";
+    };
+
+    window.cancelEditClient = function() {
+        document.getElementById('reg-id').value = ""; 
+        document.getElementById('reg-code').value = ""; // Reset Customer Code
+        document.getElementById('reg-name').value = ""; 
+        document.getElementById('reg-attn').value = ""; 
+        document.getElementById('reg-phone').value = ""; 
+        document.getElementById('reg-addr').value = ""; 
+        document.getElementById('reg-terms').value = "";
+        
+        document.getElementById('form-title').innerHTML = "➕ Register New Client"; 
+        let btnSave = document.getElementById('btn-save-client'); 
+        btnSave.innerHTML = "💾 Save Client"; 
+        btnSave.classList.replace('btn-warning', 'btn-success'); 
+        document.getElementById('btn-cancel-edit').style.display = "none";
+    };
+
+    window.registerClient = function() {
+        let editId = document.getElementById('reg-id').value; 
+        let code = document.getElementById('reg-code').value.trim().toUpperCase(); // Ambil kod
+        let name = document.getElementById('reg-name').value.trim().toUpperCase(); 
+        let attn = document.getElementById('reg-attn').value.trim(); 
+        let phone = document.getElementById('reg-phone').value.trim(); 
+        let addr = document.getElementById('reg-addr').value.trim(); 
+        let terms = document.getElementById('reg-terms').value.trim();
+        
+        if(!name) return alert("Company Name is required!"); 
+        let clients = JSON.parse(localStorage.getItem('sys_db_clients') || "[]");
+        
+        // Kalau Customer Code dikosongkan masa daftar baru, sistem buatkan secara automatik
+        if (!code) {
+            let lastCodeNum = clients.length + 1;
+            code = "C-" + lastCodeNum.toString().padStart(3, '0'); // Hasilnya: C-001, C-002
+        }
+
+        if (editId) { 
+            let idx = clients.findIndex(c => c.id === editId || c.name === editId); 
+            if(idx > -1) { 
+                let oldName = clients[idx].name; // Simpan nama lama dalam memori
+                clients[idx] = { id: editId, code: code, name: name, attn: attn, phone: phone, addr: addr, terms: terms }; 
+                
+                // --- ENJIN CASCADE UPDATE ---
+                // Jika nama syarikat bertukar, auto-update nama tu kat SEMUA dokumen lama!
+                if (oldName !== name) {
+                    let maps = ['sys_invoiceHistory', 'sys_quoHistory', 'sys_cpoHistory', 'sys_doHistory', 'sys_cnHistory', 'sys_orHistory'];
+                    maps.forEach(key => {
+                        let docs = JSON.parse(localStorage.getItem(key) || "[]");
+                        let changed = false;
+                        docs = docs.map(d => {
+                            if(d.custName === oldName) { d.custName = name; changed = true; }
+                            if(d.cName === oldName) { d.cName = name; changed = true; }
+                            return d;
+                        });
+                        // Save balik dokumen yang dah di-update senyap-senyap
+                        if(changed) localStorage.setItem(key, JSON.stringify(docs));
+                    });
+                }
+                // -----------------------------
+                
+                alert("Client Updated Successfully!"); 
+            } 
+        } else { 
+            if(clients.find(c => c.name === name || c.code === code)) return alert("Client Name or Customer Code already exists!"); 
+            clients.push({ id: 'C-'+Date.now(), code: code, name: name, attn: attn, phone: phone, addr: addr, terms: terms }); 
+            alert("Client Saved Successfully!"); 
+        }
+        localStorage.setItem('sys_db_clients', JSON.stringify(clients)); 
+        cancelEditClient(); 
+        loadCRM(); 
+    }
+
+    window.deleteClient = function(clientId, clientName) {
+        if(confirm(`⚠️ FIRST WARNING ⚠️\nAre you sure you want to DELETE the client profile for: ${clientName}?`)) {
+            if(confirm(`🚨 FINAL CONFIRMATION 🚨\nProceed to delete?`)) {
+                let clients = JSON.parse(localStorage.getItem('sys_db_clients') || "[]"); clients = clients.filter(c => c.id !== clientId && c.name !== clientName);
+                localStorage.setItem('sys_db_clients', JSON.stringify(clients)); loadCRM();
+            }
+        }
+    }
+
+    // FUNGSI PADAM DOKUMEN TERSILAP
+    window.deleteDocument = function(type, id) {
+        if(confirm(`⚠️ Padam dokumen ${id} secara KEKAL?\n\nAMARAN: Tindakan ini tidak boleh diundur.`)) {
+            let map = {'QUO':'sys_quoHistory', 'CPO':'sys_cpoHistory', 'DO':'sys_doHistory', 'INV':'sys_invoiceHistory', 'CN':'sys_cnHistory', 'DN':'sys_cnHistory', 'OR':'sys_orHistory'};
+            let hKey = map[type];
+            if(hKey) {
+                let history = JSON.parse(localStorage.getItem(hKey) || "[]");
+                let docToDelete = history.find(x => x.id === id);
+                if(!docToDelete) return;
+
+                // KAWALAN INTEGRITI: INVOIS
+                if(type === 'INV') {
+                    if (docToDelete.payments && docToDelete.payments.length > 0) {
+                        alert(`⛔ HALANGAN INTEGRITI: Invois ini telah menerima bayaran.\n\nSila padam dokumen Official Receipt (OR) yang berkaitan di dalam Masterlist / Vault terlebih dahulu sebelum memadam invois ini untuk mengelakkan ralat pada Cashbook.`);
+                        return; // Berhenti fungsi di sini
+                    }
+                }
+
+                // PEMBERSIHAN DATA: OR (RECEIPT)
+                if(type === 'OR') {
+                    let ts = docToDelete.timestamp;
+                    
+                    // 1. Padam kemasukan dari Cashbook
+                    let expenses = JSON.parse(localStorage.getItem('sys_expenses') || "[]");
+                    expenses = expenses.filter(x => x.timestamp !== ts);
+                    localStorage.setItem('sys_expenses', JSON.stringify(expenses));
+                    
+                    // 2. Tarik balik bayaran dari dalam Invois asal
+                    let invs = JSON.parse(localStorage.getItem('sys_invoiceHistory') || "[]");
+                    invs = invs.map(inv => {
+                        if(inv.payments) { inv.payments = inv.payments.filter(p => p.receiptId !== id); }
+                        return inv;
+                    });
+                    localStorage.setItem('sys_invoiceHistory', JSON.stringify(invs));
+                    
+                    // 3. Padam Credit Note automatik (jika kes Overpayment)
+                    let cndns = JSON.parse(localStorage.getItem('sys_cnHistory') || "[]");
+                    cndns = cndns.filter(cn => cn.refInv !== id);
+                    localStorage.setItem('sys_cnHistory', JSON.stringify(cndns));
+                }
+
+                // Teruskan padam dokumen utama sasaran
+                history = history.filter(x => x.id !== id);
+                localStorage.setItem(hKey, JSON.stringify(history));
+                
+                alert(`${id} berjaya dipadam. Sistem telah diselaraskan.`);
+                
+                // Refresh semua jadual
+                if(typeof loadVaultHistory === 'function') loadVaultHistory();
+                if(typeof loadCustomerOrders === 'function') loadCustomerOrders();
+                if(typeof loadCRM === 'function') loadCRM(); 
+                if(typeof loadAllDocuments === 'function') loadAllDocuments();
+            }
+        }
+    };
+
+    window.openVault = function(clientObj) {
+        currentClient = clientObj; document.getElementById('crm-section').style.display = 'none'; document.getElementById('tab-aging').classList.remove('active'); document.getElementById('vault-section').style.display = 'block'; document.getElementById('v-client-name').innerText = clientObj.name; document.getElementById('v-client-info').innerText = `ATTN: ${clientObj.attn || '-'} | Tel: ${clientObj.phone || '-'} | Addr: ${clientObj.addr || '-'}`; 
+        document.getElementById('vault-filter').value = 'ALL';
+        loadVaultHistory();
+    }
+
+    window.closeVault = function() { 
+        currentClient = null; document.getElementById('vault-section').style.display = 'none'; document.getElementById('crm-section').style.display = 'flex'; 
+        let viewOrder = document.getElementById('view-orders').style.display !== 'none';
+        if(viewOrder) loadCustomerOrders(); else loadCRM(); 
+    }
+
+    window.filterVault = function() {
+        let filter = document.getElementById('vault-filter').value;
+        let rows = document.querySelectorAll('.vault-row');
+        rows.forEach(row => {
+            let type = row.getAttribute('data-doctype');
+            if (filter === 'ALL') { row.style.display = ''; } 
+            else if (filter === 'CNDN' && (type === 'CN' || type === 'DN')) { row.style.display = ''; } 
+            else if (type === filter) { row.style.display = ''; } 
+            else { row.style.display = 'none'; }
+        });
+    };
+
+    window.loadVaultHistory = function() {
+        if(!currentClient) return; let cName = currentClient.name; let allDocs = []; let totalOut = 0;
+        
+        let invs = JSON.parse(localStorage.getItem('sys_invoiceHistory') || "[]").filter(x => x.custName === cName || x.cName === cName);
+        let quos = JSON.parse(localStorage.getItem('sys_quoHistory') || "[]").filter(x => x.cName === cName || x.custName === cName);
+        let cpos = JSON.parse(localStorage.getItem('sys_cpoHistory') || "[]").filter(x => x.cName === cName || x.custName === cName);
+        let dos = JSON.parse(localStorage.getItem('sys_doHistory') || "[]").filter(x => x.cName === cName || x.custName === cName);
+        let cndns = JSON.parse(localStorage.getItem('sys_cnHistory') || "[]").filter(x => x.cName === cName || x.custName === cName);
+        let ors = JSON.parse(localStorage.getItem('sys_orHistory') || "[]").filter(x => x.cName === cName || x.custName === cName);
+
+        invs.forEach(x => { 
+            let tot = Math.max(0, (parseFloat(x.total)||0) - (parseFloat(x.discount)||0));
+            let pd = 0; if(x.payments) x.payments.forEach(p => pd += parseFloat(p.amount)||0);
+            
+            // --- KIRAAN CN / DN BARU ---
+            let cnAmt = 0; let dnAmt = 0;
+            cndns.forEach(cn => {
+                if(cn.refInv === x.id || cn.ref === x.id) {
+                    if(cn.type === 'CREDIT NOTE' || (cn.type && cn.type.includes('CREDIT'))) cnAmt += parseFloat(cn.total)||0;
+                    else dnAmt += parseFloat(cn.total)||0;
+                }
+            });
+            
+            let bal = tot - pd - cnAmt + dnAmt; 
+            totalOut += Math.max(0, bal);
+            let stat = bal <= 0 ? '<span style="color:#27ae60;font-weight:bold;">PAID</span>' : `<span style="color:#e74c3c;font-weight:bold;">DUE: RM${bal.toFixed(2)}</span>`;
+            allDocs.push({ raw: x, type: 'INV', date: x.date, no: x.id, ref: x.poNo || x.ref || '-', amount: tot, status: stat, timestamp: x.timestamp || 0 });
+        });
+        quos.forEach(x => { allDocs.push({ raw: x, type: 'QUO', date: x.date, no: x.id, ref: x.project || '-', amount: parseFloat(x.total)||0, status: 'Pending', timestamp: x.timestamp || 0 }); });
+        
+        cpos.forEach(x => { 
+            let hasInv = invs.some(inv => inv.project && inv.project.includes(x.id));
+            let stat = hasInv ? '<span style="color:#27ae60;font-weight:bold;">Fulfilled</span>' : 'Active SO';
+            allDocs.push({ raw: x, type: 'CPO', date: x.date, no: x.id, ref: x.clientRef || '-', amount: parseFloat(x.total)||0, status: stat, timestamp: x.timestamp || 0 }); 
+        });
+        
+        dos.forEach(x => { allDocs.push({ raw: x, type: 'DO', date: x.date, no: x.id, ref: x.poRef || '-', amount: 0, status: 'Delivered', timestamp: x.timestamp || 0 }); });
+        cndns.forEach(x => { 
+            let typeCode = x.type && x.type.includes('CREDIT') ? 'CN' : 'DN';
+            allDocs.push({ raw: x, type: typeCode, date: x.date, no: x.id, ref: x.refInv || '-', amount: parseFloat(x.total)||0, status: 'Adjusted', timestamp: x.timestamp || 0 }); 
+        });
+        ors.forEach(x => { allDocs.push({ raw: x, type: 'OR', date: x.date, no: x.id, ref: x.refInv || '-', amount: parseFloat(x.total)||0, status: 'Receipt', timestamp: x.timestamp || 0 }); });
+
+        allDocs.sort((a,b) => new Date(b.date) - new Date(a.date));
+        document.getElementById('v-client-outstanding').innerText = totalOut.toFixed(2);
+
+        let tbody = document.getElementById('vault-history-body'); let html = "";
+        allDocs.forEach(d => {
+            let colorMap = {'INV':'#2ecc71', 'QUO':'#3498db', 'CPO':'#f39c12', 'DO':'#9b59b6', 'CN':'#e74c3c', 'DN':'#8e44ad', 'OR':'#1abc9c'};
+            let badge = `<span style="background:${colorMap[d.type]||'#555'}; color:white; padding:2px 6px; border-radius:3px; font-size:9px; font-weight:bold;">${d.type}</span>`;
+            
+            let actions = `<button class="btn btn-outline" style="padding:4px 8px; font-size:10px; margin-right:5px;" onclick="editDocument('${d.type}', '${d.no}')">📄 View/Edit</button>`;
+            actions += `<button class="btn btn-remove admin-only" style="padding:4px 8px; font-size:10px; margin-right:5px; background:#e74c3c; color:white; border:none;" onclick="deleteDocument('${d.type}', '${d.no}')">🗑️ Del</button>`;
+            
+            if(d.type === 'QUO') { actions += `<button class="btn btn-warning" style="padding:4px 8px; font-size:10px;" onclick="convertPipeline('${d.type}', '${d.no}', 'CPO')">➡️ To S.O.</button>`; } 
+            else if(d.type === 'CPO') { 
+                let relatedDO = dos.find(doDoc => doDoc.poRef === d.no || (doDoc.project && doDoc.project.includes(d.no)));
+                let relatedInv = invs.find(inv => inv.project && inv.project.includes(d.no));
+                
+                if(!relatedDO) actions += `<button class="btn btn-outline" style="padding:4px 8px; font-size:10px; margin-right:5px; background:#9b59b6; color:white; border:none;" onclick="convertPipeline('${d.type}', '${d.no}', 'DO')">➡️ To D.O.</button>`;
+                else actions += `<button class="btn btn-outline" style="padding:4px 8px; font-size:10px; margin-right:5px; background:#8e44ad; color:white; border:none;" onclick="editDocument('DO', '${relatedDO.id}')">📄 Open D.O.</button>`;
+                
+                if(!relatedInv) actions += `<button class="btn btn-success" style="padding:4px 8px; font-size:10px;" onclick="convertPipeline('${d.type}', '${d.no}', 'INV')">➡️ To Invoice</button>`;
+                else actions += `<button class="btn btn-success" style="padding:4px 8px; font-size:10px; background:#27ae60;" onclick="editDocument('INV', '${relatedInv.id}')">📄 Open Invoice</button>`;
+            } 
+            else if(d.type === 'DO') { actions += `<button class="btn btn-success" style="padding:4px 8px; font-size:10px;" onclick="convertPipeline('${d.type}', '${d.no}', 'INV')">➡️ To Invoice</button>`; } 
+            else if(d.type === 'INV') { 
+                if(d.status.includes('DUE')) { actions += `<button class="btn btn-primary" style="padding:4px 8px; font-size:10px; margin-right:5px;" onclick="openBulkPaymentModal('${d.no}')">💰 Receive Pay</button>`; } 
+                actions += `<button class="btn btn-danger" style="padding:4px 8px; font-size:10px;" onclick="convertPipeline('${d.type}', '${d.no}', 'CNDN')">🔄 CN/DN</button>`;
+            } 
+
+            html += `<tr class="vault-row" data-doctype="${d.type}">
+                <td style="font-size:11px;">${d.date}</td>
+                <td><strong>${d.no}</strong> ${badge}<br><small style="color:#777;">Ref: ${d.ref}</small></td>
+                <td style="font-size:11px; max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${d.raw.project || d.raw.desc || d.raw.payMethod || '-'}</td>
+                <td style="text-align:right; font-weight:bold;">${d.amount > 0 ? d.amount.toFixed(2) : '-'}</td>
+                <td style="text-align:center; font-size:11px;">${d.status}</td>
+                <td style="text-align:right; white-space:nowrap;">${actions}</td>
+            </tr>`;
+        });
+        tbody.innerHTML = html === "" ? "<tr><td colspan='6' style='text-align:center; padding:20px; color:#999;'>No history for this client. Create a new document above.</td></tr>" : html;
+        filterVault();
+    };
+
+    // ==========================================
+    // --- BULK PAYMENT & AUTO CREDIT NOTE ---
+    // ==========================================
+    window.openBulkPaymentModal = function(autoCheckInvId = null) {
+        if(!currentClient) return;
+        document.getElementById('bp-client-name').innerText = currentClient.name;
+        document.getElementById('bp-date').value = formatDate(new Date());
+        document.getElementById('bp-ref').value = "";
+        
+        let invs = JSON.parse(localStorage.getItem('sys_invoiceHistory') || "[]").filter(x => x.custName === currentClient.name || x.cName === currentClient.name);
+        let cndns = JSON.parse(localStorage.getItem('sys_cnHistory') || "[]").filter(x => x.cName === currentClient.name || x.custName === currentClient.name);
+        
+        invs.sort((a,b) => new Date(a.date) - new Date(b.date)); 
+
+        let tbody = ""; let hasDue = false;
+
+        invs.forEach(inv => {
+            let tot = Math.max(0, (parseFloat(inv.total)||0) - (parseFloat(inv.discount)||0));
+            let pd = 0; if(inv.payments) inv.payments.forEach(p => pd += parseFloat(p.amount)||0);
+            
+            let cnAmt = 0; let dnAmt = 0;
+            cndns.forEach(cn => {
+                if(cn.refInv === inv.id || cn.ref === inv.id) {
+                    if(cn.type === 'CREDIT NOTE' || (cn.type && cn.type.includes('CREDIT'))) cnAmt += parseFloat(cn.total)||0;
+                    else dnAmt += parseFloat(cn.total)||0;
+                }
+            });
+            
+            let bal = tot - pd - cnAmt + dnAmt;
+            
+            if(bal > 0) {
+                hasDue = true;
+                let isChecked = (autoCheckInvId === inv.id) ? "checked" : "";
+                let displayInput = isChecked ? "inline-block" : "none";
+                let applyVal = isChecked ? bal.toFixed(2) : "0.00";
+
+                tbody += `
+                <tr style="border-bottom:1px solid #eee;">
+                    <td style="text-align:center;"><input type="checkbox" class="bp-chk" onchange="toggleBPInv(this, ${bal})" data-id="${inv.id}" ${isChecked}></td>
+                    <td><strong>${inv.id}</strong></td>
+                    <td style="text-align:right; color:#e74c3c;">${bal.toFixed(2)}</td>
+                    <td style="text-align:right;"><input type="number" class="form-control bp-apply-input" style="width:100px; text-align:right; padding:5px; display:${displayInput};" data-id="${inv.id}" data-max="${bal}" step="0.01" value="${applyVal}" oninput="calcBP()"></td>
+                </tr>`;
+            }
+        });
+
+        if(!hasDue) {
+            tbody = `<tr><td colspan="4" style="text-align:center; padding:20px;">No outstanding invoices to pay.</td></tr>`;
+            document.getElementById('bp-applied-total').innerText = "0.00";
+        }
+
+        document.getElementById('bp-inv-list').innerHTML = tbody;
+        document.getElementById('bulkPaymentModal').style.display = 'block';
+        calcBP(); 
+    };
+
+    window.toggleBPInv = function(chk, bal) {
+        let input = chk.closest('tr').querySelector('.bp-apply-input');
+        if(chk.checked) { input.style.display = 'inline-block'; input.value = bal.toFixed(2); } else { input.style.display = 'none'; input.value = "0.00"; }
+        calcBP();
+    };
+
+    window.calcBP = function() {
+        let total = 0;
+        document.querySelectorAll('.bp-chk:checked').forEach(chk => {
+            let input = chk.closest('tr').querySelector('.bp-apply-input');
+            let val = parseFloat(input.value) || 0;
+            total += val;
+        });
+        document.getElementById('bp-applied-total').innerText = total.toFixed(2);
+    };
+
+    window.processBulkPayment = async function() {
+        let totalApplied = parseFloat(document.getElementById('bp-applied-total').innerText);
+        if(totalApplied <= 0) return alert("Please tick at least one invoice to pay and enter the amount!");
+
+        let date = document.getElementById('bp-date').value;
+        let acc = document.getElementById('bp-acc').value;
+        let ref = document.getElementById('bp-ref').value.toUpperCase();
+        
+        let invs = JSON.parse(localStorage.getItem('sys_invoiceHistory') || "[]");
+        let appliedDetails = [];
+        let cnDetails = []; 
+        let totalOverpayment = 0;
+        let ts = Date.now();
+
+        let orHistory = JSON.parse(localStorage.getItem('sys_orHistory') || "[]");
+        let lastOrNo = localStorage.getItem('sys_lastOrID') || "OR-1000";
+        let nextNum = (parseInt(lastOrNo.replace(/\D/g, '')) || 1000) + 1;
+        let orId = "OR-" + nextNum;
+
+        document.querySelectorAll('.bp-chk:checked').forEach(chk => {
+            let invId = chk.getAttribute('data-id');
+            let applyAmt = parseFloat(chk.closest('tr').querySelector('.bp-apply-input').value) || 0;
+            let maxAmt = parseFloat(chk.closest('tr').querySelector('.bp-apply-input').getAttribute('data-max')) || 0;
+            
+            let invIdx = invs.findIndex(x => x.id === invId);
+            if(invIdx > -1 && applyAmt > 0) {
+                let actualPay = applyAmt;
+                let overpaid = 0;
+                
+                if(applyAmt > maxAmt) {
+                    actualPay = maxAmt; 
+                    overpaid = applyAmt - maxAmt; 
+                    totalOverpayment += overpaid;
+                    cnDetails.push({ invId: invId, amt: overpaid });
+                }
+
+                if(!invs[invIdx].payments) invs[invIdx].payments = [];
+                invs[invIdx].payments.push({ date: date, amount: actualPay, accType: acc, ref: ref, receiptId: orId, timestamp: ts });
+                appliedDetails.push({ invId: invId, amt: applyAmt }); 
+            }
+        });
+        localStorage.setItem('sys_invoiceHistory', JSON.stringify(invs));
+
+        let expenses = JSON.parse(localStorage.getItem('sys_expenses') || "[]");
+        expenses.push({ 
+            date: date, category: "SALES (A/R)", supInv: "BULK", 
+            desc: `INVOICE PAYMENT: ${currentClient.name} (${ref || 'NO REF'})`, 
+            amount: totalApplied, accType: acc, timestamp: ts, flow: 'IN'
+        });
+        localStorage.setItem('sys_expenses', JSON.stringify(expenses));
+
+        let orItems = appliedDetails.map(det => ({
+            desc: `PAYMENT FOR INVOICE ${det.invId}`, details: '', qty: 1, uom: 'SUM', price: det.amt
+        }));
+
+        let orData = {
+            id: orId, date: date, cName: currentClient.name, cAddr: currentClient.addr,
+            refInv: appliedDetails.map(d => d.invId).join(', '),
+            payMethod: acc, payRef: ref, total: totalApplied, timestamp: ts, items: orItems
+        };
+        orHistory.push(orData);
+        localStorage.setItem('sys_orHistory', JSON.stringify(orHistory));
+        localStorage.setItem('sys_lastOrID', orId);
+        
+        document.getElementById('bulkPaymentModal').style.display = 'none';
+
+        if(totalOverpayment > 0) {
+            let cnHistory = JSON.parse(localStorage.getItem('sys_cnHistory') || "[]");
+            let lastCnNo = localStorage.getItem('sys_lastCnID') || "CN-1000"; 
+            let nextCnNum = (parseInt(lastCnNo.replace(/\D/g, '')) || 1000) + 1; 
+            let cnId = "CN-" + nextCnNum;
+
+            let cnItems = cnDetails.map(det => ({ 
+                desc: `OVERPAYMENT CREDIT FOR INVOICE ${det.invId}`, 
+                details: `Received extra via ${orId}`, 
+                qty: 1, uom: 'SUM', price: det.amt 
+            }));
+
+            let cnData = { 
+                id: cnId, date: date, cName: currentClient.name, cAddr: currentClient.addr, 
+                refInv: orId, type: 'CREDIT NOTE', 
+                total: totalOverpayment, timestamp: ts + 100, items: cnItems 
+            };
+            cnHistory.push(cnData); 
+            localStorage.setItem('sys_cnHistory', JSON.stringify(cnHistory)); 
+            localStorage.setItem('sys_lastCnID', cnId);
+
+            window.forceSyncToFirebase(); 
+            alert(`Payment Recorded!\nOfficial Receipt (${orId}) saved.\n\n⚠️ OVERPAYMENT DETECTED: RM ${totalOverpayment.toFixed(2)}\nCredit Note (${cnId}) has been automatically generated.`);
+            initDocument('OR', orData);
+        } else {
+            window.forceSyncToFirebase(); 
+            alert(`Payment Recorded!\nOfficial Receipt (${orId}) has been saved.`);
+            initDocument('OR', orData); 
+        }
+    };
+
+    window.openAgeing = function() { document.getElementById('crm-section').style.display = 'none'; document.getElementById('vault-section').style.display = 'none'; document.getElementById('tab-aging').classList.add('active'); loadAgeingReport('summary'); };
+    window.closeAgeing = function() { document.getElementById('tab-aging').classList.remove('active'); document.getElementById('crm-section').style.display = 'flex'; };
+
+    window.loadAgeingReport = function(viewType = 'summary') {
+        let def = JSON.parse(localStorage.getItem('sys_companyDefaults')) || {}; document.getElementById('aging-co-name').innerText = def.name || "COMPANY NAME";
+        let agingLogo = document.getElementById('aging-logo'); if(agingLogo && def.logo) { agingLogo.src = def.logo; agingLogo.style.height = (def.logoHeight ? Math.min(def.logoHeight, 80) : 60) + 'px'; agingLogo.style.display = 'block'; } else if (agingLogo) { agingLogo.style.display = 'none'; }
+        let today = new Date(); document.getElementById('aging-as-at').innerText = today.toLocaleDateString('en-GB'); document.getElementById('aging-title').innerText = viewType === 'summary' ? "DEBTORS BALANCES AS AT " + today.toLocaleDateString('en-GB') : "DEBTORS AGEING AS AT " + today.toLocaleDateString('en-GB');
+
+        let monthCols = []; for(let i=0; i<6; i++) { let d = new Date(today.getFullYear(), today.getMonth() - i, 1); let mName = d.toLocaleString('en-US', { month: 'short' }); let yName = d.getFullYear().toString().substr(-2); monthCols.push({ label: `${mName}-${yName}`, m: d.getMonth(), y: d.getFullYear() }); }
+        let thead = `<tr>`; if(viewType === 'summary') { thead += `<th>No.</th><th>Client Name</th><th>Terms</th><th style="text-align:right;">Outstanding</th>`; } else { thead += `<th>Reference</th><th>Date</th><th>Client Name</th><th style="text-align:right;">Outstanding</th>`; }
+        monthCols.forEach(col => { thead += `<th style="text-align:right;">${col.label}</th>`; });
+        if(viewType === 'summary') { thead += `<th style="text-align:right;">< ${monthCols[5].label}</th><th class="no-print" style="text-align:center;">Action</th></tr>`; } else { thead += `<th style="text-align:right;">< ${monthCols[5].label}</th></tr>`; }
+        document.getElementById('aging-thead').innerHTML = thead;
+
+        let invoices = JSON.parse(localStorage.getItem('sys_invoiceHistory') || "[]"); let clients = JSON.parse(localStorage.getItem('sys_db_clients') || "[]");
+        let cndns = JSON.parse(localStorage.getItem('sys_cnHistory') || "[]"); // <--- KITA TAMBAH INI
+        let reportData = []; let grandTotals = { outstanding: 0, buckets: [0,0,0,0,0,0], older: 0 };
+
+        invoices.forEach(inv => {
+            let invTot = Math.max(0, (parseFloat(inv.total)||0) - (parseFloat(inv.discount)||0)); 
+            let paid = 0; if(inv.payments) inv.payments.forEach(p => paid += parseFloat(p.amount)||0); 
+            
+            // --- KIRAAN CN / DN BARU ---
+            let cnAmt = 0; let dnAmt = 0;
+            cndns.forEach(cn => {
+                if(cn.refInv === inv.id || cn.ref === inv.id) {
+                    if(cn.type === 'CREDIT NOTE' || (cn.type && cn.type.includes('CREDIT'))) cnAmt += parseFloat(cn.total)||0;
+                    else dnAmt += parseFloat(cn.total)||0;
+                }
+            });
+            
+            let balance = invTot - paid - cnAmt + dnAmt;
+            
+            if(balance > 0) {
+                let invDate = new Date(inv.date); let isValidDate = !isNaN(invDate.getTime()); let bucketIdx = -1;
+                if(isValidDate) { for(let i=0; i<6; i++) { if(invDate.getMonth() === monthCols[i].m && invDate.getFullYear() === monthCols[i].y) { bucketIdx = i; break; } } }
+                let clientObj = clients.find(c => c.name === inv.custName) || { terms: '30 Days' };
+                if(viewType === 'summary') {
+                    let existing = reportData.find(r => r.client === inv.custName); if(!existing) { existing = { client: inv.custName, terms: clientObj.terms, totalOut: 0, buckets: [0,0,0,0,0,0], older: 0 }; reportData.push(existing); }
+                    existing.totalOut += balance; if(bucketIdx > -1) existing.buckets[bucketIdx] += balance; else existing.older += balance;
+                } else {
+                    let row = { ref: inv.id, date: inv.date, client: inv.custName, terms: clientObj.terms, totalOut: balance, buckets: [0,0,0,0,0,0], older: 0 };
+                    if(bucketIdx > -1) row.buckets[bucketIdx] += balance; else row.older += balance; reportData.push(row);
+                }
+                grandTotals.outstanding += balance; if(bucketIdx > -1) grandTotals.buckets[bucketIdx] += balance; else grandTotals.older += balance;
+            }
+        });
+
+        if(viewType === 'summary') reportData.sort((a,b) => a.client.localeCompare(b.client)); else reportData.sort((a,b) => new Date(b.date) - new Date(a.date));
+
+        let tbody = "";
+        reportData.forEach((row, idx) => {
+            tbody += `<tr>`;
+            if(viewType === 'summary') { tbody += `<td>${idx+1}</td><td><strong>${row.client}</strong></td><td><span style="background:#fff3cd; padding:2px 5px; font-size:10px;">${row.terms}</span></td><td style="text-align:right; font-weight:bold;">${row.totalOut.toFixed(2)}</td>`; } 
+            else { let dObj = new Date(row.date); let niceDate = isNaN(dObj.getTime()) ? (row.date || '-') : dObj.toLocaleDateString('en-GB'); tbody += `<td><strong>${row.ref}</strong></td><td>${niceDate}</td><td>${row.client}</td><td style="text-align:right; font-weight:bold;">${row.totalOut.toFixed(2)}</td>`; }
+            row.buckets.forEach(amt => { tbody += `<td style="text-align:right;">${amt > 0 ? amt.toFixed(2) : '-'}</td>`; });
+            if(viewType === 'summary') { let safeName = row.client.replace(/'/g, "\\'"); tbody += `<td style="text-align:right; color:#e74c3c;">${row.older > 0 ? row.older.toFixed(2) : '-'}</td><td class="no-print" style="text-align:center;"><button class="btn btn-outline" style="padding:4px 8px; font-size:10px; background:#e0f7fa; border:1px solid #b2ebf2;" onclick="generateSOA('${safeName}')">📜 Print SOA</button></td></tr>`; } 
+            else { tbody += `<td style="text-align:right; color:#e74c3c;">${row.older > 0 ? row.older.toFixed(2) : '-'}</td></tr>`; }
+        });
+        if(reportData.length === 0) tbody = `<tr><td colspan="${viewType==='summary' ? 6 + monthCols.length : 5 + monthCols.length}" style="text-align:center; padding:20px;">No outstanding debts found.</td></tr>`;
+        document.getElementById('aging-tbody').innerHTML = tbody;
+
+        if(reportData.length > 0) {
+            let tfoot = `<tr><td colspan="${viewType==='summary'?3:3}" style="text-align:right;">GRAND TOTAL (RM) :</td><td style="text-align:right; color:#e74c3c;">${grandTotals.outstanding.toFixed(2)}</td>`;
+            grandTotals.buckets.forEach(amt => { tfoot += `<td style="text-align:right;">${amt > 0 ? amt.toFixed(2) : '-'}</td>`; });
+            if(viewType === 'summary') { tfoot += `<td style="text-align:right; color:#e74c3c;">${grandTotals.older > 0 ? grandTotals.older.toFixed(2) : '-'}</td><td class="no-print"></td></tr>`; } else { tfoot += `<td style="text-align:right; color:#e74c3c;">${grandTotals.older > 0 ? grandTotals.older.toFixed(2) : '-'}</td></tr>`; }
+            document.getElementById('aging-tfoot').innerHTML = tfoot;
+        } else { document.getElementById('aging-tfoot').innerHTML = ""; }
+    };
+
+    window.printAgeing = function() {
+        document.body.className = ''; document.body.classList.add('printing-aging');
+        let oriTitle = document.title; document.title = "DEBTORS_AGEING_REPORT";
+        setTimeout(() => { window.print(); document.title = oriTitle; document.body.className=''; }, 3000);
+    };
+
+    window.generateSOA = function(clientName) {
+        document.getElementById('tab-aging').classList.remove('active'); document.getElementById('soa-section').style.display = 'block';
+        let def = JSON.parse(localStorage.getItem('sys_companyDefaults')) || {}; let clients = JSON.parse(localStorage.getItem('sys_db_clients') || "[]"); let clientObj = clients.find(c => c.name === clientName) || {};
+        document.getElementById('soa-co-name').innerText = def.name || "COMPANY NAME";
+        let soaLogo = document.getElementById('soa-logo'); if(soaLogo && def.logo) { soaLogo.src = def.logo; soaLogo.style.height = (def.logoHeight ? Math.min(def.logoHeight, 80) : 60) + 'px'; soaLogo.style.display = 'block'; } else if (soaLogo) { soaLogo.style.display = 'none'; }
+        document.getElementById('soa-co-addr').innerText = def.addr || ""; document.getElementById('soa-client-name').innerText = clientName;
+        let cAddr = ""; if (clientObj.addr) cAddr += clientObj.addr + "\n"; if (clientObj.phone) cAddr += "Tel: " + clientObj.phone; document.getElementById('soa-client-addr').innerText = cAddr;
+        document.getElementById('soa-date').innerText = new Date().toLocaleDateString('en-GB');
+
+        let invs = JSON.parse(localStorage.getItem('sys_invoiceHistory') || "[]").filter(x => x.custName === clientName || x.cName === clientName);
+        let cndns = JSON.parse(localStorage.getItem('sys_cnHistory') || "[]").filter(x => x.cName === clientName || x.custName === clientName);
+        let transactions = [];
+
+        invs.forEach(inv => {
+            let invTot = Math.max(0, (parseFloat(inv.total)||0) - (parseFloat(inv.discount)||0)); transactions.push({ date: inv.date, type: 'INVOICE', ref: inv.id, debit: invTot, credit: 0 });
+            if(inv.payments) { inv.payments.forEach(p => { transactions.push({ date: p.date, type: 'PAYMENT', ref: p.ref || 'Payment Received', debit: 0, credit: parseFloat(p.amount) }); }); }
+        });
+        cndns.forEach(cn => {
+            let cnTot = parseFloat(cn.total) || 0;
+            if(cn.type === 'CREDIT NOTE') { transactions.push({ date: cn.date, type: 'CREDIT NOTE', ref: cn.id, debit: 0, credit: cnTot }); } 
+            else { transactions.push({ date: cn.date, type: 'DEBIT NOTE', ref: cn.id, debit: cnTot, credit: 0 }); }
+        });
+        transactions.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+        let tbody = ""; let runningBal = 0;
+        transactions.forEach(t => {
+            runningBal += (t.debit - t.credit);
+            let tDateObj = new Date(t.date); let tDateStr = isNaN(tDateObj.getTime()) ? (t.date || '-') : tDateObj.toLocaleDateString('en-GB');
+            tbody += `<tr style="border-bottom: 1px solid #ccc;"><td style="border-right: 1px solid #000; border-left: 1px solid #000;">${tDateStr}</td><td style="border-right: 1px solid #000;"><strong>${t.type}</strong> ${t.ref ? '<br><small>'+t.ref+'</small>' : ''}</td><td style="border-right: 1px solid #000; text-align:right;">${t.debit > 0 ? t.debit.toFixed(2) : ''}</td><td style="border-right: 1px solid #000; text-align:right;">${t.credit > 0 ? t.credit.toFixed(2) : ''}</td><td style="border-right: 1px solid #000; text-align:right; font-weight:bold;">${runningBal.toFixed(2)}</td></tr>`;
+        });
+
+        if(transactions.length === 0) { tbody = `<tr><td colspan="5" style="text-align:center; padding:20px;">No transactions found.</td></tr>`; }
+        document.getElementById('soa-tbody').innerHTML = tbody;
+        document.getElementById('soa-terms').innerText = clientObj.terms ? `Payment Terms: ${clientObj.terms}. Please arrange payment accordingly.` : "Please arrange payment for the outstanding balance.";
+        document.getElementById('soa-bank').innerText = def.bank ? "PAYMENT CAN BE MADE TO:\n" + def.bank : "";
+    };
+
+    window.closeSOA = function() { document.getElementById('soa-section').style.display = 'none'; document.getElementById('tab-aging').classList.add('active'); };
+    window.printSOA = function() {
+        document.body.className = ''; document.body.classList.add('printing-soa');
+        let oriTitle = document.title; document.title = "SOA_" + document.getElementById('soa-client-name').innerText.replace(/\s+/g, '_');
+        
+        let cleanupPrint = function() {
+            document.title = oriTitle; 
+            document.body.className = ''; 
+            window.removeEventListener('focus', cleanupPrint);
+            window.removeEventListener('touchstart', cleanupPrint);
+            window.removeEventListener('click', cleanupPrint);
+        };
+
+        setTimeout(() => {
+            window.print(); 
+            setTimeout(() => {
+                window.addEventListener('focus', cleanupPrint);
+                window.addEventListener('touchstart', cleanupPrint);
+                window.addEventListener('click', cleanupPrint);
+            }, 1500);
+        }, 500);
+    };
+
+    window.updateDocNumber = function() {
+        if (editingDocId) return; // Jangan ubah nombor kalau tengah edit dokumen sedia ada
+        if (activeDocMode !== 'INV') return; // Hanya fokus pada Invoice
+
+        let dVal = document.getElementById('doc-date').value;
+        if(!dVal) return;
+        
+        let d = new Date(dVal);
+        let yy = d.getFullYear().toString().slice(-2);
+        let mm = (d.getMonth() + 1).toString().padStart(2, '0');
+        let dd = d.getDate().toString().padStart(2, '0');
+        
+        let datePrefix = yy + mm + dd + "-";
+        let currentYYMM = yy + mm; // Contoh: "2603" untuk Mac 2026
+
+        // Tarik ID Invois yang terakhir dari memori sistem
+        let lastNo = localStorage.getItem('sys_lastInvoiceID');
+        let num = 0; // Default, mula dari 0
+
+        if (lastNo) {
+            let parts = lastNo.split('-');
+            
+            // Semak jika format ID lama tu adalah format tarikh (contoh: 260310-005)
+            if (parts.length === 2 && parts[0].length === 6 && !isNaN(parts[0])) {
+                let lastYYMM = parts[0].substring(0, 4); // Ambil Tahun & Bulan sahaja dari ID lama
+                
+                if (lastYYMM === currentYYMM) {
+                    // Kalau bulan SAMA, buang base 1000 supaya jadi 00x balik
+                    num = (parseInt(parts[1]) || 0) % 1000;
+                } else {
+                    // Kalau bulan DAH TUKAR, reset balik ke 0
+                    num = 0;
+                }
+            }
+            // NOTA: Kalau ID lama tu format "INV-1006", sistem automatik abaikan dan start "001"
+        }
+
+        // Tambah 1 dan jadikan 3 digit (contoh: 001)
+        let nextNumStr = (num + 1).toString().padStart(3, '0');
+        
+        document.getElementById('doc-no').value = datePrefix + nextNumStr;
+    };
+
+    // ==========================================
+    // --- FUNGSI EDITOR UNIFIED & AUTOFILL ---
+    // ==========================================
+   // --- FUNGSI TUKAR BANK (ON-CHANGE) ---
+    window.changeDocBank = function(selectEl) {
+        let def = JSON.parse(localStorage.getItem('sys_companyDefaults')) || {};
+        let bankList = def.bankAccounts || [];
+        let holderRow = document.getElementById('row-display-bank-holder');
+        
+        let bName = "-"; let bAc = "-"; let bHolder = "";
+        
+        if (!selectEl || selectEl.value === "") {
+            // Kembali ke default
+            bName = def.bankName || def.bank || "-";
+            bAc = def.bankAc || "-";
+            bHolder = def.bankHolder || ""; // <-- TAMBAH INI
+            
+            if(holderRow) {
+                if(bHolder && bHolder.trim() !== "") {
+                    document.getElementById('display-bank-holder').innerText = bHolder;
+                    holderRow.style.display = 'table-row';
+                } else {
+                    holderRow.style.display = 'none';
+                }
+            }
+        } else {
+            // Tarik data bank pilihan dari Dropdown
+            let selBank = bankList[selectEl.value];
+            if (selBank) {
+                bName = selBank.name || "-";
+                bAc = selBank.ac || "-";
+                bHolder = selBank.holder || "";
+                
+                // Paparkan atau sorok Nama Pemegang (Account Name)
+                if(holderRow) {
+                    if(bHolder && bHolder.trim() !== "") {
+                        document.getElementById('display-bank-holder').innerText = bHolder;
+                        holderRow.style.display = 'table-row'; // Tunjukkan baris Account Name
+                    } else {
+                        holderRow.style.display = 'none'; // Sorok jika kosong
+                    }
+                }
+            }
+        }
+        
+        // Kemaskini teks pada HTML Invois
+        if (document.getElementById('display-bank-name')) document.getElementById('display-bank-name').innerText = bName;
+        if (document.getElementById('display-bank-ac')) document.getElementById('display-bank-ac').innerText = bAc;
+    };
+
+
+    // --- FUNGSI EDITOR UNIFIED & AUTOFILL ---
+    window.initDocument = function(mode, loadData = null) {
+        activeDocMode = mode; editingDocId = loadData ? loadData.id : null;
+        
+        document.getElementById('crm-section').style.display = 'none'; 
+        document.getElementById('vault-section').style.display = 'none'; 
+        document.getElementById('tab-aging').classList.remove('active');
+        if(document.getElementById('soa-section')) document.getElementById('soa-section').style.display = 'none';
+        
+        document.getElementById('editor-section').style.display = 'block';
+        window.scrollTo(0, 0); 
+
+        let tDisplay = document.getElementById('doc-title-display'); 
+        let refLabel = document.getElementById('doc-ref-label'); 
+        let extraRow = document.getElementById('row-top-extra'); 
+        let extraLabel = document.getElementById('doc-extra-label'); 
+        let amtRow = document.getElementById('row-top-amount'); 
+        let projLabel = document.getElementById('doc-proj-label'); 
+        let totalsBox = document.getElementById('doc-totals-box'); 
+        let doSigns = document.getElementById('do-signatures'); 
+        let quoSign = document.getElementById('quo-signature'); 
+        let orSign = document.getElementById('or-signature'); 
+        let autoSign = document.getElementById('doc-auto-sign'); 
+        let discRow = document.getElementById('doc-discountRow'); 
+        let thQty = document.getElementById('th-qty'); 
+        let thUom = document.getElementById('th-uom'); 
+        let thRate = document.getElementById('th-rate');
+        let thCalc = document.getElementById('th-calc');
+        let rmWords = document.getElementById('doc-rm-words');
+
+        // Reset semua display dahulu
+        document.querySelectorAll('.col-money').forEach(el => el.style.display = 'table-cell'); 
+        document.querySelectorAll('.col-rate').forEach(el => el.style.display = 'table-cell');
+        document.querySelectorAll('.col-calc').forEach(el => el.style.display = 'table-cell');
+
+        // RESET MAKLUMAT BANK
+        let bankInfoBlock = document.getElementById('doc-bank-info');
+        if(bankInfoBlock) bankInfoBlock.style.display = 'none';
+        
+        if(totalsBox) totalsBox.style.display = 'flex'; if(doSigns) doSigns.style.display = 'none'; if(quoSign) quoSign.style.display = 'none'; if(orSign) orSign.style.display = 'none';
+        if(rmWords) rmWords.style.display = 'none'; 
+        let orCustomFooter = document.getElementById('or-custom-footer');
+        if (orCustomFooter) orCustomFooter.style.display = 'none';
+
+        let cndnFooter = document.getElementById('cndn-custom-footer');
+        if (cndnFooter) cndnFooter.style.display = 'none';
+
+        let bottomSection = document.getElementById('bottom-general-section');
+        if(bottomSection) bottomSection.style.display = 'flex';
+
+        let notesLabel = document.getElementById('doc-notes-label');
+        if(notesLabel) notesLabel.style.display = 'block';
+        let docTerms = document.getElementById('doc-terms');
+        if(docTerms) docTerms.style.display = 'block';
+        let docTermsMirror = document.getElementById('doc-terms-mirror');
+        if(docTermsMirror) { docTermsMirror.style.display = ''; docTermsMirror.classList.remove('no-print'); }
+
+        if(autoSign) autoSign.style.display = 'block'; if(extraRow) extraRow.style.display = 'table-row'; if(amtRow) amtRow.style.display = 'table-row'; if(discRow) discRow.style.display = 'table-row'; if(thQty) thQty.style.display = 'table-cell'; if(thUom) thUom.style.display = 'table-cell'; if(thRate) { thRate.style.display = 'table-cell'; thRate.innerText = 'Rate'; } if(thCalc) thCalc.style.display = 'table-cell';
+
+        if (mode === 'QUO') { tDisplay.innerText = "QUOTATION"; tDisplay.style.color = "#000"; refLabel.innerText = "Quote No :"; extraLabel.innerText = "Valid Until :"; projLabel.innerText = "Project :"; if(quoSign) quoSign.style.display = 'block'; if(autoSign) autoSign.style.display = 'none'; } 
+        else if (mode === 'CPO') { tDisplay.innerText = "SALES ORDER"; tDisplay.style.color = "#000"; refLabel.innerText = "SO No :"; extraLabel.innerText = "Client PO :"; projLabel.innerText = "Project / Remarks :"; }
+        else if (mode === 'DO') { tDisplay.innerText = "DELIVERY ORDER"; tDisplay.style.color = "#000"; refLabel.innerText = "DO No :"; extraLabel.innerText = "PO Ref :"; projLabel.innerText = "Site / Remarks :"; document.querySelectorAll('.col-money').forEach(el => el.style.display = 'none'); if(totalsBox) totalsBox.style.display = 'none'; if(amtRow) amtRow.style.display = 'none'; if(discRow) discRow.style.display = 'none'; if(doSigns) doSigns.style.display = 'flex'; if(autoSign) autoSign.style.display = 'none'; }
+        else if (mode === 'INV') { 
+            tDisplay.innerText = "INVOICE"; tDisplay.style.color = "#000"; 
+            refLabel.innerText = "INV No :"; 
+            
+            let extraL = document.getElementById('doc-extra-label'); if(extraL) extraL.innerText = "Terms :"; 
+            let projL = document.getElementById('doc-proj-label'); if(projL) projL.innerText = "Project / PO Ref :"; 
+            
+            // Aktifkan Paparan Bank
+            if (bankInfoBlock) {
+                bankInfoBlock.style.display = 'block';
+                let def = JSON.parse(localStorage.getItem('sys_companyDefaults')) || {};
+                
+                let bankSelectorContainer = document.getElementById('bank-selector-container');
+                let bankSelector = document.getElementById('doc-bank-selector');
+                let bankList = def.bankAccounts || []; 
+                
+                if (bankSelector && bankSelectorContainer) {
+                    bankSelector.innerHTML = '<option value="">-- Pilihan Asal (Default) --</option>'; // Reset
+                    
+                    if (bankList.length > 0) {
+                        bankList.forEach((b, idx) => {
+                            let opt = document.createElement('option');
+                            opt.value = idx; 
+                            opt.text = `${b.name} (${b.ac})`; 
+                            bankSelector.appendChild(opt);
+                        });
+                        bankSelectorContainer.style.display = 'block'; 
+                    } else {
+                        bankSelectorContainer.style.display = 'none'; 
+                    }
+                }
+
+                // Jalankan fungsi bank supaya Account Name terpapar jika ada
+                if(window.changeDocBank) {
+                    bankSelector.value = ""; // Paksa reset
+                    window.changeDocBank(bankSelector);
+                }
+                
+                // Jika Invois Lama Dibuka (View/Edit)
+                if (loadData && loadData.selectedBankIdx !== undefined && loadData.selectedBankIdx !== "") {
+                    if (bankSelector) {
+                        bankSelector.value = loadData.selectedBankIdx;
+                        window.changeDocBank(bankSelector);
+                    }
+                }
+            }
+        }
+        else if (mode === 'CNDN') { 
+            tDisplay.innerText = "CREDIT NOTE"; tDisplay.style.color = "#e74c3c"; 
+            refLabel.innerText = "Note No :"; extraLabel.innerText = "Ref Inv :"; projLabel.innerText = "Reason :"; 
+            if(discRow) discRow.style.display = 'none'; 
+
+            let bottomSection = document.getElementById('bottom-general-section');
+            if(bottomSection) bottomSection.style.display = 'none';
+            if(totalsBox) totalsBox.style.display = 'none';
+            
+            if(cndnFooter) cndnFooter.style.display = 'block';
+            
+            let def = JSON.parse(localStorage.getItem('sys_companyDefaults')) || {};
+            document.getElementById('cndn-co-name-sign').innerText = def.name || "COMPANY NAME";
+            document.getElementById('cndn-bank-name-display').innerText = def.bankName || def.bank || "-";
+            document.getElementById('cndn-bank-ac-display').innerText = def.bankAc || "-";
+        }
+        else if (mode === 'OR') { 
+            tDisplay.innerText = "OFFICIAL RECEIPT"; tDisplay.style.color = "#000"; 
+            refLabel.innerText = "Receipt No :"; extraLabel.innerText = "Pay Method :"; 
+            document.getElementById('doc-billto-label').innerText = "Received From:"; 
+            projLabel.innerText = "Payment Details :"; 
+            if(discRow) discRow.style.display = 'none'; 
+            
+            document.querySelectorAll('.col-money').forEach(el => el.style.display = 'table-cell');
+            document.querySelectorAll('.col-calc').forEach(el => el.style.display = 'table-cell');
+            
+            if(thQty) thQty.style.display = 'table-cell';
+            if(thUom) thUom.style.display = 'table-cell';
+            if(thRate) { thRate.style.display = 'table-cell'; thRate.innerText = 'Rate'; }
+            if(thCalc) thCalc.style.display = 'table-cell';
+
+            if(autoSign) autoSign.style.display = 'none';
+            let orCustomFooter = document.getElementById('or-custom-footer');
+            if(orCustomFooter) orCustomFooter.style.display = 'block';
+
+            let bottomSection = document.getElementById('bottom-general-section');
+            if(bottomSection) bottomSection.style.display = 'none';
+        }
+
+        if(mode !== 'OR') document.getElementById('doc-billto-label').innerText = "Bill to:";
+        document.getElementById('doc-items').innerHTML = '';
+
+        if(!loadData) {
+            document.getElementById('doc-date').value = formatDate(new Date()); document.getElementById('doc-project').value = "";
+            let mapKey = mode==='QUO'?'sys_lastQuoID' : mode==='CPO'?'sys_lastCpoID' : mode==='DO'?'sys_lastDoID' : mode==='INV'?'sys_lastInvoiceID' : 'sys_lastCnID';
+            let prefix = mode==='QUO'?'QT-' : mode==='CPO'?'SO-' : mode==='DO'?'DO-' : mode==='INV'?'INV-' : 'CN-';
+            let lastNo = localStorage.getItem(mapKey) || (prefix + "1000"); 
+            let parts = lastNo.split('-'); 
+            let num = parseInt(parts[parts.length - 1]) || 1000; 
+            document.getElementById('doc-no').value = prefix + (num + 1);
+
+            if (mode === 'INV') updateDocNumber();
+
+            if(currentClient) {
+                document.getElementById('doc-custName').value = currentClient.name || "";
+                let cAddr = currentClient.addr || "";
+                if (currentClient.phone) cAddr += "\nTel: " + currentClient.phone;
+                if (currentClient.attn) cAddr += "\nAttn: " + currentClient.attn;
+                
+                setAndMirror('doc-custAddr', cAddr);
+                
+               if (mode === 'INV') {
+                    let clientTerm = currentClient.terms ? currentClient.terms : "30 Days";
+                    document.getElementById('doc-extra-input').value = clientTerm; 
+                }
+            }
+            addDocRow();
+        } else {
+            document.getElementById('doc-no').value = loadData.id; 
+            document.getElementById('doc-date').value = loadData.date; 
+            
+            let existingName = loadData.custName || loadData.cName || "";
+            document.getElementById('doc-custName').value = existingName;
+            
+            let existingAddr = loadData.custAddr || loadData.cAddr || "";
+            document.getElementById('doc-custAddr').value = existingAddr;
+            let addrMirror = document.getElementById('doc-custAddr-mirror');
+            if (addrMirror) addrMirror.innerText = existingAddr;
+            
+            let existingProj = loadData.project || loadData.payRef || loadData.reason || "";
+            document.getElementById('doc-project').value = existingProj;
+            let projMirror = document.getElementById('doc-project-mirror');
+            if (projMirror) projMirror.innerText = existingProj;
+            
+            let existingTerms = loadData.terms || "";
+            document.getElementById('doc-terms').value = existingTerms;
+            let termsMirror = document.getElementById('doc-terms-mirror');
+            if (termsMirror) termsMirror.innerText = existingTerms;
+            
+            if(document.getElementById('doc-discount')) {
+                document.getElementById('doc-discount').value = loadData.discount || loadData.disc || "0.00";
+            }
+            
+            let extraInput = document.getElementById('doc-extra-input');
+            if(extraInput) {
+                if (mode === 'QUO') extraInput.value = loadData.valid || "";
+                else if (mode === 'CPO') extraInput.value = loadData.clientRef || "";
+                else if (mode === 'DO') extraInput.value = loadData.poRef || "";
+                else if (mode === 'INV') extraInput.value = loadData.poNo || loadData.terms || "";
+                else if (mode === 'CNDN') extraInput.value = loadData.refInv || "";
+                else if (mode === 'OR') extraInput.value = loadData.payMethod || "";
+            }
+
+            if(loadData.items) { loadData.items.forEach(itm => addDocRow(itm.desc || "", itm.details || "", itm.qty || 1, itm.price || 0, itm.uom || "SUM")); } else { addDocRow(); }
+            if(mode === 'CNDN' && loadData.type) { tDisplay.innerText = loadData.type; tDisplay.style.color = loadData.type === 'CREDIT NOTE' ? '#e74c3c' : '#2980b9'; }
+        }
+        
+        if (mode === 'OR' && loadData) {
+            document.getElementById('doc-custName').value = loadData.cName || loadData.custName || "";
+            setAndMirror('doc-custAddr', loadData.cAddr || loadData.custAddr || "");
+            
+            document.getElementById('doc-extra-input').value = loadData.payMethod || "BANK";
+            setAndMirror('doc-project', loadData.payRef || "");
+        }
+        
+        calcUnifiedDoc(); setTimeout(() => document.querySelectorAll('textarea').forEach(el => autoResize(el)), 100);
+    };
+
+    window.addDocRow = function(desc="", details="", qty=1, price=0, uom="Sum") {
+        let tr = document.createElement('tr'); tr.style.borderBottom = "1px solid #ccc"; 
+        
+        // DO sahaja sorok harga. OR dan lain-lain papar penuh.
+        let displayMoney = (activeDocMode === 'DO') ? 'none' : 'table-cell'; 
+        
+        let safeDesc = desc ? desc.toString().replace(/"/g, '&quot;') : "";
+        let safeDetails = details ? details.toString().replace(/"/g, '&quot;') : "";
+
+        tr.innerHTML = `
+        <td style="vertical-align:top; padding:8px; border-right:1px solid #ccc;">
+            <input type="text" name="item_desc" autocomplete="off" class="doc-input item-desc" style="width:100%; font-weight:bold; text-transform:uppercase; font-size:12px; margin-bottom:2px;" placeholder="Item / Description" list="db-item-list" value="${safeDesc}" onchange="autoFillPrice(this); calcUnifiedDoc();" oninput="this.parentNode.querySelector('.print-mirror.desc-m').innerText=this.value;">
+            <textarea name="item_details" autocomplete="off" class="doc-textarea item-details" style="font-size:11px; color:#555;" placeholder="Additional info..." oninput="this.parentNode.querySelector('.print-mirror.det-m').innerText=this.value; autoResize(this);" rows="1">${safeDetails}</textarea>
+            <div class="print-mirror desc-m" style="font-weight:bold; font-size:12px; text-transform:uppercase; margin-bottom:2px;">${safeDesc}</div>
+            <div class="print-mirror det-m" style="font-size:11px; color:#444; white-space:pre-wrap;">${safeDetails}</div>
+        </td>
+        <td style="vertical-align:top; padding:8px; border-right:1px solid #ccc;">
+            <input type="number" name="item_qty" autocomplete="off" class="doc-input item-qty" style="width:100%; text-align:center; font-size:12px; font-family:Arial;" value="${qty}" oninput="calcUnifiedDoc()">
+        </td>
+        <td style="vertical-align:top; padding:8px; border-right:1px solid #ccc;">
+            <input type="text" name="item_uom" autocomplete="off" class="doc-input item-uom" style="width:100%; text-align:center; font-size:12px; font-family:Arial;" value="${uom}" onchange="this.setAttribute('value', this.value)">
+        </td>
+        <td class="col-money" style="vertical-align:top; padding:8px; border-right:1px solid #ccc; display:${displayMoney};">
+            <input type="number" name="item_price" autocomplete="off" class="doc-input item-price" style="width:100%; text-align:right; font-size:12px; font-family:Arial;" value="${price}" step="0.01" oninput="calcUnifiedDoc()">
+        </td>
+        <td class="col-money row-total col-calc" style="vertical-align:top; padding:8px; text-align:right; font-weight:bold; font-size:12px; font-family:Arial; display:${displayMoney};">0.00</td>
+        <td class="no-print" style="vertical-align:top; padding:8px;">
+            <button class="btn btn-danger admin-only" style="padding:2px 6px;" onclick="this.closest('tr').remove(); calcUnifiedDoc()">X</button>
+        </td>
+        `;
+        document.getElementById('doc-items').appendChild(tr); 
+        setTimeout(() => { autoResize(tr.querySelector('.item-details')); }, 10); 
+        calcUnifiedDoc();
+    };
+
+    // --- FUNGSI MASTER: KIRA JUMLAH & FOOTER ---
+   window.calcUnifiedDoc = function() {
+        let subtotal = 0;
+        let totalQty = 0; // KOD BARU: Pembolehubah untuk kira Total Qty
+        
+        document.querySelectorAll('#doc-items tr').forEach(row => {
+            let q = parseFloat(row.querySelector('.item-qty').value) || 0; 
+            let p = parseFloat(row.querySelector('.item-price').value) || 0; 
+            let tot = q * p;
+            if(row.querySelector('.row-total')) row.querySelector('.row-total').innerText = tot.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}); 
+            subtotal += tot;
+            totalQty += q; // KOD BARU: Tambah kuantiti
+        });
+        
+        let disc = parseFloat(document.getElementById('doc-discount').value) || 0; 
+        let total = Math.max(0, subtotal - disc);
+
+        let discPrintEl = document.getElementById('doc-disc-print');
+        if(discPrintEl) {
+            discPrintEl.innerText = disc.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+        }
+        
+        let subStr = subtotal.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+        let totStr = total.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+        
+        // Update jumlah di penjuru kanan atas & Total Box
+        let docSubEl = document.getElementById('doc-subtotal');
+        if(docSubEl) docSubEl.innerText = subStr; 
+        
+        let docTotEl = document.getElementById('doc-total');
+        if(docTotEl) docTotEl.innerText = totStr; 
+        
+        let topAmtEl = document.getElementById('doc-top-amount');
+        if(topAmtEl) topAmtEl.innerText = totStr; 
+        
+        // Update data untuk Footer OR
+        let orSumWords = document.getElementById('or-sum-words');
+        if(orSumWords) orSumWords.innerText = window.amountToWords(total);
+        let orSumDigits = document.getElementById('or-sum-digits');
+        if(orSumDigits) orSumDigits.innerText = totStr;
+        let orRef = document.getElementById('or-ref-details');
+        if(orRef) {
+            let details = document.getElementById('doc-project').value; 
+            orRef.innerText = details || "-";
+        }
+        
+        // --- KOD BARU: Update data untuk Footer CN ---
+        let cndnSumWords = document.getElementById('cndn-sum-words');
+        if (cndnSumWords) cndnSumWords.innerText = window.amountToWords(total);
+        
+        let cndnTotalQty = document.getElementById('cndn-total-qty');
+        if (cndnTotalQty) cndnTotalQty.innerText = totalQty;
+        
+        let cndnTotalAmt = document.getElementById('cndn-total-amt');
+        if (cndnTotalAmt) cndnTotalAmt.innerText = totStr;
+        // ---------------------------------------------
+    };
+
+    window.closeEditor = function() { 
+        document.getElementById('editor-section').style.display = 'none'; 
+        activeDocMode = null; 
+        editingDocId = null; 
+        
+        if(currentClient) {
+            document.getElementById('vault-section').style.display = 'block'; 
+            loadVaultHistory(); 
+        } else {
+            document.getElementById('crm-section').style.display = 'flex'; 
+            let viewOrder = document.getElementById('view-orders').style.display !== 'none';
+            if(viewOrder) loadCustomerOrders(); else loadCRM();
+        }
+    };
+
+    window.saveUnifiedDoc = async function() {
+        let id = document.getElementById('doc-no').value.trim(); if(!id) return alert("Document Number is required!");
+        let items = Array.from(document.querySelectorAll('#doc-items tr')).filter(r => r.querySelector('.item-desc').value.trim() !== "").map(r => ({ desc: r.querySelector('.item-desc').value.trim().toUpperCase(), details: r.querySelector('.item-details').value.trim(), qty: r.querySelector('.item-qty') ? r.querySelector('.item-qty').value : 1, uom: r.querySelector('.item-uom') ? r.querySelector('.item-uom').value.toUpperCase() : '', price: r.querySelector('.item-price').value }));
+        if(items.length === 0) return alert("Please add at least one item!");
+        // Cari bank mana yang sedang dipilih
+        let bankSelEl = document.getElementById('doc-bank-selector');
+        let chosenBankIdx = bankSelEl && bankSelEl.style.display !== 'none' ? bankSelEl.value : "";
+
+        let baseData = { 
+            id: id, 
+            date: document.getElementById('doc-date').value, 
+            custName: document.getElementById('doc-custName').value, 
+            custAddr: document.getElementById('doc-custAddr').value, 
+            project: document.getElementById('doc-project').value, 
+            terms: document.getElementById('doc-terms').value, 
+            items: items, 
+            selectedBankIdx: chosenBankIdx, // KOD BARU
+            timestamp: editingDocId ? (Date.now() - 1000) : Date.now() 
+        };
+
+        let hKey = ''; let dbKey = '';
+        
+        // KOD BARU: Tambah .replace(/,/g,'') supaya koma dibuang sebelum simpan
+        if(activeDocMode === 'QUO') { 
+            baseData.valid = document.getElementById('doc-extra-input').value; 
+            baseData.discount = document.getElementById('doc-discount').value; 
+            baseData.total = document.getElementById('doc-subtotal').innerText.replace(/,/g,''); 
+            baseData.cName = baseData.custName; baseData.cAddr = baseData.custAddr; 
+            hKey = 'sys_quoHistory'; dbKey = 'sys_lastQuoID'; 
+        } 
+        else if (activeDocMode === 'CPO') { 
+            baseData.clientRef = document.getElementById('doc-extra-input').value; 
+            baseData.total = document.getElementById('doc-subtotal').innerText.replace(/,/g,''); 
+            baseData.cName = baseData.custName; 
+            hKey = 'sys_cpoHistory'; dbKey = 'sys_lastCpoID'; 
+        } 
+        else if (activeDocMode === 'DO') { 
+            baseData.poRef = document.getElementById('doc-extra-input').value; 
+            baseData.cName = baseData.custName; 
+            hKey = 'sys_doHistory'; dbKey = 'sys_lastDoID'; 
+        } 
+        else if (activeDocMode === 'INV') { 
+            baseData.poNo = document.getElementById('doc-extra-input').value; 
+            baseData.discount = document.getElementById('doc-discount').value; 
+            baseData.total = document.getElementById('doc-subtotal').innerText.replace(/,/g,''); 
+            let def = JSON.parse(localStorage.getItem('sys_companyDefaults')) || {}; 
+            baseData.companyName = def.name || ""; baseData.companyAddr = def.addr || ""; 
+            let existInv = JSON.parse(localStorage.getItem('sys_invoiceHistory')||"[]").find(x=>x.id===id); 
+            baseData.payments = existInv ? existInv.payments : []; 
+            hKey = 'sys_invoiceHistory'; dbKey = 'sys_lastInvoiceID'; 
+        } 
+        else if (activeDocMode === 'CNDN') { 
+            baseData.refInv = document.getElementById('doc-extra-input').value; 
+            baseData.total = document.getElementById('doc-subtotal').innerText.replace(/,/g,''); 
+            baseData.cName = baseData.custName; baseData.type = document.getElementById('doc-title-display').innerText; 
+            hKey = 'sys_cnHistory'; dbKey = 'sys_lastCnID'; 
+        }
+        else if (activeDocMode === 'OR') { 
+            baseData.payMethod = document.getElementById('doc-extra-input').value.toUpperCase(); 
+            baseData.payRef = document.getElementById('doc-project').value.toUpperCase(); 
+            baseData.total = document.getElementById('doc-subtotal').innerText.replace(/,/g,''); 
+            baseData.cName = document.getElementById('doc-custName').value;
+            let existOr = JSON.parse(localStorage.getItem('sys_orHistory')||"[]").find(x=>x.id===id);
+            baseData.refInv = existOr ? existOr.refInv : "MANUAL";
+            hKey = 'sys_orHistory'; dbKey = 'sys_lastOrID'; 
+        }
+
+        let history = JSON.parse(localStorage.getItem(hKey) || "[]"); let idx = history.findIndex(x => x.id === id);
+        if(idx >= 0) history[idx] = baseData; else { history.push(baseData); localStorage.setItem(dbKey, id); }
+        localStorage.setItem(hKey, JSON.stringify(history)); 
+        alert(id + " successfully saved!"); 
+        closeEditor(); 
+    };
+
+    window.editDocument = function(type, id) { 
+        let map = {'QUO':'sys_quoHistory', 'CPO':'sys_cpoHistory', 'DO':'sys_doHistory', 'INV':'sys_invoiceHistory', 'CN':'sys_cnHistory', 'DN':'sys_cnHistory', 'OR':'sys_orHistory'}; 
+        let h = JSON.parse(localStorage.getItem(map[type]) || "[]"); 
+        let data = h.find(x => x.id === id); 
+        if(data) initDocument((type === 'CN' || type === 'DN') ? 'CNDN' : type, data); 
+    };
+
+    window.convertPipeline = function(sourceType, sourceId, targetType) {
+        if(!confirm(`Convert this ${sourceType} into a new ${targetType}?`)) return;
+        let map = {'QUO':'sys_quoHistory', 'CPO':'sys_cpoHistory', 'DO':'sys_doHistory', 'INV':'sys_invoiceHistory'}; let h = JSON.parse(localStorage.getItem(map[sourceType]) || "[]"); let srcData = h.find(x => x.id === sourceId); if(!srcData) return;
+        
+        let clientName = srcData.custName || srcData.cName;
+        let clients = JSON.parse(localStorage.getItem('sys_db_clients') || "[]");
+        let foundClient = clients.find(c => c.name === clientName);
+        if(foundClient) {
+            currentClient = foundClient;
+            document.getElementById('v-client-name').innerText = foundClient.name;
+            document.getElementById('v-client-info').innerText = `ATTN: ${foundClient.attn || '-'} | Tel: ${foundClient.phone || '-'} | Addr: ${foundClient.addr || '-'}`;
+        }
+
+        initDocument(targetType, null); document.getElementById('doc-custName').value = clientName; setAndMirror('doc-custAddr', srcData.custAddr || srcData.cAddr || "");
+        
+        if(targetType === 'CPO') document.getElementById('doc-project').value = "Ref Quote: " + sourceId + "\n" + (srcData.project || "");
+        if(targetType === 'DO') { document.getElementById('doc-extra-input').value = sourceId; setAndMirror('doc-project', srcData.project || ""); }
+        if(targetType === 'INV') { 
+            let combinedProj = "";
+            // Periksa jika dokumen asal ada nombor rujukan pelanggan (PO)
+            let poRef = srcData.clientRef || srcData.poNo || srcData.poRef || "";
+            if (poRef) combinedProj += `PO No: ${poRef}\n`;
+            
+            combinedProj += `[Ref SO: ${sourceId}]\n`;
+            
+            let projDesc = srcData.project || srcData.reason || "";
+            if (projDesc) combinedProj += projDesc;
+            
+            setAndMirror('doc-project', combinedProj.trim()); // Trim buang ruang kosong lebihan
+            
+            // Pastikan Terms dimasukkan
+            document.getElementById('doc-extra-input').value = foundClient && foundClient.terms ? foundClient.terms : "30 Days"; 
+        }
+        if(targetType === 'CNDN') { document.getElementById('doc-extra-input').value = sourceId; }
+        
+        document.getElementById('doc-items').innerHTML = ""; if(srcData.items) { srcData.items.forEach(itm => addDocRow(itm.desc, itm.details, itm.qty, itm.price, itm.uom)); }
+        if(srcData.discount && document.getElementById('doc-discount')) document.getElementById('doc-discount').value = srcData.discount || srcData.disc; calcUnifiedDoc(); alert(`Successfully mapped from ${sourceId}. Please check the details and click SAVE.`);
+    };
+
+    window.addEventListener("beforeprint", () => { document.querySelectorAll('input[type="date"]').forEach(el => { if (el.value) { el.setAttribute('data-origval', el.value); let p = el.value.split('-'); if (p.length === 3) { el.type = 'text'; el.value = `${p[2]}/${p[1]}/${p[0]}`; el.style.textAlign = 'right'; } } }); });
+    window.addEventListener("afterprint", () => { document.querySelectorAll('input[data-origval]').forEach(el => { el.type = 'date'; el.value = el.getAttribute('data-origval'); el.removeAttribute('data-origval'); }); });
+
+    window.printUnifiedDoc = function() {
+        calcUnifiedDoc(); 
+        document.querySelectorAll('textarea').forEach(el => autoResize(el)); 
+        
+        // KOD DIBETULKAN: Hanya sasar label dan kotak nota sahaja, BUKAN kotak parent!
+        let notesText = document.getElementById('doc-terms').value.trim();
+        let docTerms = document.getElementById('doc-terms');
+        let notesLabel = docTerms ? docTerms.previousElementSibling : null; // Ambil label di atas kotak nota
+        let notesMirror = document.getElementById('doc-terms-mirror');
+        
+        if(notesText === "") {
+            if(notesLabel) notesLabel.style.display = "none";
+            if(notesMirror) notesMirror.style.display = "none";
+        } else {
+            if(notesLabel) notesLabel.style.display = "block";
+            if(notesMirror) notesMirror.style.display = "block"; 
+        }
+        
+        document.body.className = ''; 
+        document.body.classList.add('printing-invoice'); 
+        
+        let title = document.getElementById('doc-title-display').innerText.replace(/\s+/g, '_'); 
+        let cName = document.getElementById('doc-custName').value.replace(/[^a-zA-Z0-9]/g, ""); 
+        let no = document.getElementById('doc-no').value;
+        let oriTitle = document.title; 
+        document.title = `${title}_${cName}_${no}`;
+        
+        let cleanupPrint = function() {
+            document.title = oriTitle; 
+            document.body.className = ''; 
+            // Munculkan kembali label selepas selesai print
+            if(notesLabel) notesLabel.style.display = "block";
+            window.removeEventListener('focus', cleanupPrint);
+            window.removeEventListener('touchstart', cleanupPrint);
+            window.removeEventListener('click', cleanupPrint);
+        };
+
+        setTimeout(() => {
+            window.print();
+            setTimeout(() => {
+                window.addEventListener('focus', cleanupPrint);
+                window.addEventListener('touchstart', cleanupPrint);
+                window.addEventListener('click', cleanupPrint);
+            }, 1500); 
+        }, 500); 
+    };
+
+    window.loadItemDatalist = function() {
+        let items = JSON.parse(localStorage.getItem('sys_db_items') || "[]");
+        let dl = document.getElementById('db-item-list');
+        if(dl) { dl.innerHTML = items.map(itm => `<option value="${itm.name}">`).join(''); }
+    };
+
+    window.autoFillPrice = function(inputEl) {
+        let items = JSON.parse(localStorage.getItem('sys_db_items') || "[]");
+        let val = inputEl.value.trim().toUpperCase();
+        let found = items.find(i => i.name.toUpperCase() === val);
+        if(found) {
+            let row = inputEl.closest('tr');
+            let priceInput = row.querySelector('.item-price');
+            if(priceInput && (parseFloat(priceInput.value) === 0 || priceInput.value === "")) { 
+                priceInput.value = found.price;
+            }
+        }
+    };
+
+    // ==========================================
+    // --- ENJIN RINGGIT MALAYSIA IN WORDS ---
+    // ==========================================
+    window.numberToEnglish = function(n) {
+        var string = n.toString(), units, tens, scales, start, end, chunks, chunksLen, chunk, ints, i, word, words;
+        if (parseInt(string) === 0) { return 'ZERO'; }
+        units = [ '', 'ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT', 'NINE', 'TEN', 'ELEVEN', 'TWELVE', 'THIRTEEN', 'FOURTEEN', 'FIFTEEN', 'SIXTEEN', 'SEVENTEEN', 'EIGHTEEN', 'NINETEEN' ];
+        tens = [ '', '', 'TWENTY', 'THIRTY', 'FORTY', 'FIFTY', 'SIXTY', 'SEVENTY', 'EIGHTY', 'NINETY' ];
+        scales = [ '', 'THOUSAND', 'MILLION', 'BILLION' ];
+        start = string.length; chunks = [];
+        while (start > 0) { end = start; chunks.push(string.slice((start = Math.max(0, start - 3)), end)); }
+        chunksLen = chunks.length; words = [];
+        for (i = 0; i < chunksLen; i++) {
+            chunk = parseInt(chunks[i]);
+            if (chunk) {
+                ints = chunks[i].split('').reverse().map(parseFloat);
+                if (ints[1] === 1) { ints[0] += 10; }
+                if ((word = scales[i])) { words.push(word); }
+                if ((word = units[ints[0]])) { words.push(word); }
+                if ((word = tens[ints[1]])) { words.push(word); }
+                if ((word = units[ints[2]])) { words.push(word + ' HUNDRED'); }
+            }
+        }
+        return words.reverse().join(' ');
+    };
+
+    window.amountToWords = function(amount) {
+        let parts = parseFloat(amount).toFixed(2).split('.');
+        let ringgit = window.numberToEnglish(parts[0]);
+        let sen = parseInt(parts[1]);
+        let str = ringgit;
+        if(sen > 0) { str += " AND CENTS " + window.numberToEnglish(sen); }
+        return str + " ONLY";
+    };
+</script>
+</body>
+</html>
