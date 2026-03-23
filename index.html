@@ -522,7 +522,7 @@ function showAuthForm(type) {
         }
     };
 
-    // ==========================================
+   // ==========================================
     // --- 2. FUNGSI DAFTAR BARU (REGISTER) ---
     // ==========================================
     window.registerUser = async function() {
@@ -539,7 +539,7 @@ function showAuthForm(type) {
         btn.disabled = true;
 
         try {
-            // 1. Semak Status Lesen
+            console.log("STEP 1: Semak Lesen dari Database");
             const licenseRef = doc(window.db, "license_codes", license);
             const licenseSnap = await getDoc(licenseRef);
 
@@ -548,15 +548,19 @@ function showAuthForm(type) {
 
             btn.innerText = "MENDAFTAR...";
             
-            // 2. Daftar Akaun Baru di Firebase Auth
+            console.log("STEP 2: Cipta Akaun Firebase Auth");
             const userCredential = await createUserWithEmailAndPassword(window.auth, email, pass);
             const user = userCredential.user;
             const companyId = "COMP_" + user.uid;
 
-            // 3. Hantar e-mel pengesahan
+            console.log("STEP 3: TUNGGU TOKEN (Buffer 1.5 saat)...");
+            // INI UBAT DIA: Kita rehatkan sistem kejap supaya token Auth sempat 'sync'
+            await new Promise(resolve => setTimeout(resolve, 1500));
+
+            console.log("STEP 4: Hantar Emel Pengesahan");
             await sendEmailVerification(user);
 
-            // 4. Cipta data syarikat & profil
+            console.log("STEP 5: Simpan Profil Pengguna");
             await setDoc(doc(window.db, "users", user.uid), {
                 email: email,
                 name: name,
@@ -564,28 +568,29 @@ function showAuthForm(type) {
                 role: "admin"
             });
 
+            console.log("STEP 6: Simpan Folder Syarikat");
             await setDoc(doc(window.db, "companies", companyId), {
                 company_name: name + " Enterprise", 
                 subscription_status: "active",
                 created_at: Date.now()
             });
 
-
-            // 5. Matikan Kod Lesen
+            console.log("STEP 7: Matikan Kod Lesen");
             await updateDoc(licenseRef, {
                 status: "used",
                 used_by: email,
                 used_at: Date.now()
             });
 
-            // 6. Cuci memori dan Logout paksa
+            console.log("STEP 8: Cuci Memori & Logout");
             await window.signOut(window.auth);
             localStorage.clear();
 
+            console.log("STEP 9: PENDAFTARAN BERJAYA SEPENUHNYA!");
             btn.innerText = "BERJAYA!";
             alert("Pendaftaran berjaya! Sila semak e-mel anda (termasuk folder Spam) dan klik pautan pengesahan sebelum log masuk.");
             
-            // 7. Bersihkan form & kembali ke tab Login
+            // Bersihkan form & kembali ke tab Login
             document.getElementById('regName').value = "";
             document.getElementById('regEmail').value = "";
             document.getElementById('regPass').value = "";
@@ -593,9 +598,10 @@ function showAuthForm(type) {
             showAuthForm('login');
 
         } catch (error) {
+            console.error("RALAT KETIKA DAFTAR:", error);
             alert("RALAT DAFTAR:\n" + (error.message || error));
         } finally {
-            // INI PENTING: Apa-apa jadi (berjaya/gagal), butang wajib kembali asal
+            // Sentiasa pulangkan butang kepada keadaan asal
             btn.innerText = originalText; 
             btn.disabled = false;
         }
