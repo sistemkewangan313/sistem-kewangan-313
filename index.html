@@ -557,18 +557,19 @@ function showAuthForm(type) {
             await sendEmailVerification(user);
 
             // 4. Cipta data syarikat & profil
-            await setDoc(doc(window.db, "companies", companyId), {
-                company_name: name + " Enterprise", 
-                subscription_status: "active",
-                created_at: Date.now()
-            });
-
             await setDoc(doc(window.db, "users", user.uid), {
                 email: email,
                 name: name,
                 company_id: companyId,
                 role: "admin"
             });
+
+            await setDoc(doc(window.db, "companies", companyId), {
+                company_name: name + " Enterprise", 
+                subscription_status: "active",
+                created_at: Date.now()
+            });
+
 
             // 5. Matikan Kod Lesen
             await updateDoc(licenseRef, {
