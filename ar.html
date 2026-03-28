@@ -138,6 +138,7 @@
             margin: 0; 
         }
         input[type=number] {
+            appearance: textfield;
             -moz-appearance: textfield;
         }
 
@@ -745,6 +746,8 @@
         // Muatkan senarai CRM & Item
         toggleRightPanel('CLIENTS');
         loadItemDatalist(); 
+
+        loadBankAccounts();
 
         // Auto-buka dokumen jika diklik dari Cashbook
         const urlParams = new URLSearchParams(window.location.search);
@@ -2404,6 +2407,25 @@
         let str = ringgit;
         if(sen > 0) { str += " AND CENTS " + window.numberToEnglish(sen); }
         return str + " ONLY";
+    };
+
+    // KOD BARU: Tarik senarai bank ke dalam Modal Bayaran
+    window.loadBankAccounts = function() {
+        let def = JSON.parse(localStorage.getItem('sys_companyDefaults')) || {};
+        let banks = def.bankAccounts || [];
+        
+        let html = '';
+        if(banks.length > 0) {
+            banks.forEach(b => {
+                html += `<option value="${b.name} - ${b.ac}">🏦 ${b.name} (${b.ac})</option>`;
+            });
+        } else {
+            html += `<option value="BANK">🏦 Default Bank Account</option>`;
+        }
+        html += `<option value="TUNAI">💵 Petty Cash / Tunai</option>`;
+
+        let bpAcc = document.getElementById('bp-acc');
+        if(bpAcc) bpAcc.innerHTML = html;
     };
 </script>
 </body>

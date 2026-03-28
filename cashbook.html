@@ -484,12 +484,13 @@
         document.getElementById('print-bank-name').innerText = def.bank || '-';
 
         loadCategories();
+        loadBankAccounts();
         
         let expensesRaw = JSON.parse(localStorage.getItem('sys_expenses') || "[]");
         populateYearFilter(expensesRaw);
         
-        // Auto filter "BANK" on load 
-        document.getElementById('filter-acc').value = 'BANK';
+        // Auto filter "ALL" on load 
+        document.getElementById('filter-acc').value = 'ALL';
         loadAndProcessCashbook();
     
     };
@@ -526,6 +527,46 @@
 
         document.getElementById('cb-category').innerHTML = html;
     }
+
+   // KOD BARU: Tarik senarai bank & Default kepada "All Accounts"
+    window.loadBankAccounts = function() {
+        let def = JSON.parse(localStorage.getItem('sys_companyDefaults')) || {};
+        let banks = def.bankAccounts || [];
+        
+        // 1. Kemaskini Dropdown Entry (Borang Kiri)
+        let cbAcc = document.getElementById('cb-acc');
+        let cbHtml = '';
+        if(banks.length > 0) {
+            banks.forEach(b => {
+                cbHtml += `<option value="${b.name} - ${b.ac}">🏦 ${b.name} (${b.ac})</option>`;
+            });
+        } else {
+            cbHtml += `<option value="BANK">🏦 Default Bank</option>`;
+        }
+        cbHtml += `<option value="TUNAI">💵 Petty Cash / Tunai</option>`;
+        if(cbAcc) cbAcc.innerHTML = cbHtml;
+
+        // 2. Kemaskini Dropdown Filter (Ledger Kanan)
+        let fAcc = document.getElementById('filter-acc');
+        let fHtml = `<option value="ALL">All Accounts</option>`;
+        if(banks.length > 0) {
+            banks.forEach(b => {
+                let val = `${b.name} - ${b.ac}`;
+                fHtml += `<option value="${val}">🏦 ${b.name} - ${b.ac}</option>`;
+            });
+        } else {
+            fHtml += `<option value="BANK">🏦 Default Bank</option>`;
+        }
+        fHtml += `<option value="TUNAI">💵 Petty Cash</option>`;
+        
+        let oldVal = fAcc ? fAcc.value : null;
+        if(fAcc) {
+            fAcc.innerHTML = fHtml;
+            // TUKAR KAT SINI: Auto-select 'ALL' bila skrin mula-mula dibuka
+            if(oldVal && fHtml.includes(oldVal)) fAcc.value = oldVal;
+            else fAcc.value = "ALL"; 
+        }
+    };
 
     function populateYearFilter(expenses) {
         let years = new Set();
@@ -930,9 +971,10 @@
 
     function calculateReconStats(allExpensesRaw) {
         let fAcc = document.getElementById('filter-acc').value;
-        if(fAcc !== 'BANK') return; 
+        // Kalau pilih ALL atau TUNAI, jangan buat Recon
+        if(fAcc === 'ALL' || fAcc === 'TUNAI') return; 
 
-        let bankData = allExpensesRaw.filter(x => x.accType === 'BANK');
+        let bankData = allExpensesRaw.filter(x => x.accType === fAcc);
         
         let bookBal = 0;
         let unpresentedOut = 0;
@@ -982,11 +1024,15 @@
         let fAcc = document.getElementById('filter-acc').value;
 
         let dashboard = document.getElementById('recon-dashboard');
-        if(fAcc === 'BANK') {
+        
+        // Tunjuk Recon Dashboard HANYA jika bank spesifik dipilih
+        if(fAcc !== 'ALL' && fAcc !== 'TUNAI') {
             dashboard.style.display = 'block';
+            document.getElementById('print-bank-name').innerText = fAcc; // Update header PDF
             calculateReconStats(expensesRaw);
         } else {
             dashboard.style.display = 'none';
+            document.getElementById('print-bank-name').innerText = fAcc === 'TUNAI' ? "CASH IN HAND" : "ALL ACCOUNTS";
         }
 
         let accountData = expensesRaw;
@@ -1006,7 +1052,8 @@
             let amt = parseFloat(txn.amount) || 0;
             let currentBal = 0;
             
-            if(txn.accType === 'BANK') {
+            // Asingkan pengiraan baki ikut jenis akaun
+            if(txn.accType !== 'TUNAI') {
                 if(txn.flow === 'IN') tempBalBank += amt; else tempBalBank -= amt;
                 currentBal = tempBalBank;
             } else {
@@ -1031,9 +1078,22 @@
     function renderTable() {
         let fYear = document.getElementById('filter-year').value;
         let fMonth = document.getElementById('filter-month').value;
+        let fAcc = document.getElementById('filter-acc').value; // Dapatkan jenis filter
         
         let orHistory = JSON.parse(localStorage.getItem('sys_orHistory') || "[]");
         let pvHistory = JSON.parse(localStorage.getItem('sys_pvHistory') || "[]");
+
+        // --- KOD BARU: Dinamikkan Tajuk Kolum Pertama ---
+        let thMatch = document.getElementById('th-match');
+        if (fAcc === 'ALL') {
+            thMatch.style.display = 'table-cell';
+            thMatch.innerHTML = '<span style="color:#2980b9;">Account</span>';
+        } else if (fAcc === 'TUNAI') {
+            thMatch.style.display = 'none'; // Sorok terus untuk Petty Cash
+        } else {
+            thMatch.style.display = 'table-cell';
+            thMatch.innerHTML = '<span class="screen-only">Match</span><span class="print-only">Line</span>';
+        }
 
         let currentFilteredData = globalExpenses.filter(txn => {
             let d = new Date(txn.date);
@@ -1052,18 +1112,16 @@
             if(txn.flow === 'IN') sumIn += amt; else sumOut += amt;
         });
 
-        let lastBankTxn = currentFilteredData.slice().reverse().find(x => x.accType === 'BANK');
+        let lastBankTxn = currentFilteredData.slice().reverse().find(x => x.accType !== 'TUNAI');
         let lastTunaiTxn = currentFilteredData.slice().reverse().find(x => x.accType === 'TUNAI');
 
         if(lastBankTxn) balBank = lastBankTxn.computedBalance;
         if(lastTunaiTxn) balTunai = lastTunaiTxn.computedBalance;
 
-        let fAcc = document.getElementById('filter-acc').value;
         let finalBal = 0;
-        
-        if (fAcc === 'BANK') finalBal = balBank;
+        if (fAcc === 'ALL') finalBal = balBank + balTunai;
         else if (fAcc === 'TUNAI') finalBal = balTunai;
-        else finalBal = balBank + balTunai;
+        else finalBal = balBank; // Untuk mana-mana bank spesifik (Maybank, CIMB, dll)
 
         const fmt = (num) => parseFloat(num || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         let sumBalEl = document.getElementById('sum-bal');
@@ -1107,14 +1165,16 @@
                 let bbfVal = Math.abs(bbfAmount).toFixed(2);
                 let bbfLabel = bbfAmount >= 0 ? bbfVal + " CR" : bbfVal + " DR";
                 
+                // KOD BARU: Betulkan ruang kosong Beginning Balance ikut filter
+                let bbfFirstCol = fAcc === 'TUNAI' ? `<td style="display:none;"></td>` : `<td></td>`;
+
                 tbody += `
                 <tr>
-                    <td class="print-only"></td>
-                    <td class="screen-only"></td>
+                    ${bbfFirstCol}
                     <td></td>
                     <td colspan="2" style="text-align:left; font-weight:800; color:#34495e;">BEGINNING BALANCE</td>
-                    <td style="text-align:right; font-weight:bold; color:#000;"></td>
-                    <td style="text-align:right; font-weight:bold; color:#000;"></td>
+                    <td></td>
+                    <td></td>
                     <td style="text-align:right; font-weight:900; color:#2980b9;">${bbfLabel}</td>
                     <td class="no-print"></td>
                 </tr>`;
@@ -1127,44 +1187,60 @@
             
             if(isIn) pageTotalIn += amt; else pageTotalOut += amt;
 
-            let bankBadge = `<span class="screen-only" style="background:#eee; color:#555; padding:2px 5px; font-size:9px; border-radius:3px;">${txn.accType || 'BANK'}</span>`;
             let niceDate = new Date(txn.date);
             let dateStr = isNaN(niceDate.getTime()) ? txn.date : niceDate.toLocaleDateString('en-GB');
-
             let delId = txn.id || txn.timestamp;
             let matchValue = txn.matchRef || (txn.reconciled ? "✔" : "");
+
+            let bankBadge = `<span class="screen-only" style="background:#dff9fb; color:#2980b9; padding:3px 6px; font-size:9px; border-radius:4px; cursor:pointer; border:1px solid #c7ecee; display:inline-block; margin-top:3px;" onclick="changeTxnBank('${delId}', '${txn.accType || 'BANK'}', this)" title="Klik untuk tukar Bank">${txn.accType || 'BANK'} 🔽</span>`;
+            let printBankText = `<span class="print-only" style="font-size:9px; color:#555; font-weight:bold;">${txn.accType || 'BANK'}</span>`;
+
+            // --- KOD BARU: Logik Ruangan Pertama Berdasarkan Filter ---
+            let firstColHtml = "";
+            let dateColHtml = `<td>${dateStr}</td>`; // Default ringkas
+
+            if (fAcc === 'ALL') {
+                firstColHtml = `<td style="vertical-align:middle;">${bankBadge}${printBankText}</td>`;
+            } else if (fAcc === 'TUNAI') {
+                firstColHtml = `<td style="display:none;"></td>`;
+            } else {
+                firstColHtml = `<td style="vertical-align:middle;">
+                    <span class="print-only">${matchValue}</span>
+                    <input type="text" class="match-input screen-only" value="${matchValue}" onchange="updateMatchCode('${delId}', this.value)" ondblclick="autoAssignMatch('${delId}')" title="Double-click to Auto-Number" placeholder="...">
+                </td>`;
+                dateColHtml = `<td>${dateStr}<br>${bankBadge}</td>`; // Kekalkan dropdown bawah tarikh untuk Recon
+            }
+            // -----------------------------------------------------------
 
             let balVal = txn.computedBalance;
             let balCR = Math.abs(balVal).toFixed(2) + (balVal >= 0 ? " CR" : " DR");
 
             let displayRef = txn.supInv || '-';
-            if ((txn.category === "JUALAN (A/R)" || txn.category === "SALES (A/R)") && (displayRef === "BULK" || displayRef === "-")) {
-                let found = orHistory.find(x => x.timestamp === txn.timestamp);
-                if (!found) found = orHistory.find(x => x.date === txn.date && parseFloat(x.total) === parseFloat(txn.amount));
-                if (found) displayRef = found.id;
-            } else if ((txn.category === "BELIAN (A/P)" || txn.category === "PURCHASES (A/P)") && (displayRef === "PV" || displayRef === "-")) {
-                let found = pvHistory.find(x => x.timestamp === txn.timestamp);
-                if (!found) found = pvHistory.find(x => x.date === txn.date && parseFloat(x.total) === parseFloat(txn.amount));
-                if (found) displayRef = found.id;
-            }
+            if ((txn.category === "JUALAN (A/R)" || txn.category === "SALES (A/R)") && (displayRef === "BULK" || displayRef === "-")) {
+                let found = orHistory.find(x => x.timestamp === txn.timestamp);
+                if (!found) found = orHistory.find(x => x.date === txn.date && parseFloat(x.total) === parseFloat(txn.amount));
+                if (found) displayRef = found.id;
+            } else if ((txn.category === "BELIAN (A/P)" || txn.category === "PURCHASES (A/P)") && (displayRef === "PV" || displayRef === "-")) {
+                let found = pvHistory.find(x => x.timestamp === txn.timestamp);
+                if (!found) found = pvHistory.find(x => x.date === txn.date && parseFloat(x.total) === parseFloat(txn.amount));
+                if (found) displayRef = found.id;
+            }
 
-            let refLink = `<strong>${displayRef}</strong>`;
-            if (displayRef.startsWith('PV-')) {
-                refLink = `<a href="ap.html?view=${displayRef}" style="color:#e74c3c; text-decoration:underline; cursor:pointer;" title="Klik untuk lihat PV"><strong>${displayRef}</strong></a>`;
-            } else if (displayRef.startsWith('OR-')) {
-                refLink = `<a href="ar.html?view=${displayRef}" style="color:#27ae60; text-decoration:underline; cursor:pointer;" title="Klik untuk lihat OR"><strong>${displayRef}</strong></a>`;
-            } else if (displayRef === 'BULK' || displayRef === 'PV' || displayRef === '-') {
-                let warna = isIn ? '#27ae60' : '#e74c3c'; // Hijau (IN), Merah (OUT)
-                let linkTarget = isIn ? 'ar.html' : 'ap.html';
-                refLink = `<a href="${linkTarget}" style="color:${warna}; text-decoration:underline; cursor:pointer;" title="Pergi ke modul berkaitan"><strong>${displayRef}</strong></a>`;
-            }
+            let refLink = `<strong>${displayRef}</strong>`;
+            if (displayRef.startsWith('PV-')) {
+                refLink = `<a href="ap.html?view=${displayRef}" style="color:#e74c3c; text-decoration:underline; cursor:pointer;" title="Klik untuk lihat PV"><strong>${displayRef}</strong></a>`;
+            } else if (displayRef.startsWith('OR-')) {
+                refLink = `<a href="ar.html?view=${displayRef}" style="color:#27ae60; text-decoration:underline; cursor:pointer;" title="Klik untuk lihat OR"><strong>${displayRef}</strong></a>`;
+            } else if (displayRef === 'BULK' || displayRef === 'PV' || displayRef === '-') {
+                let warna = isIn ? '#27ae60' : '#e74c3c'; 
+                let linkTarget = isIn ? 'ar.html' : 'ap.html';
+                refLink = `<a href="${linkTarget}" style="color:${warna}; text-decoration:underline; cursor:pointer;" title="Pergi ke modul berkaitan"><strong>${displayRef}</strong></a>`;
+            }
+            
             tbody += `
             <tr>
-                <td style="vertical-align:middle;">
-                    <span class="print-only">${matchValue}</span>
-                    <input type="text" class="match-input screen-only" value="${matchValue}" onchange="updateMatchCode('${delId}', this.value)" ondblclick="autoAssignMatch('${delId}')" title="Double-click to Auto-Number" placeholder="...">
-                </td>
-                <td>${dateStr}<br>${bankBadge}</td>
+                ${firstColHtml}
+                ${dateColHtml}
                 <td>${refLink}</td>
                 <td>${txn.desc || txn.category || '-'}</td>
                 <td style="text-align:right;">${!isIn ? amt.toFixed(2) : ''}</td>
@@ -1175,7 +1251,8 @@
         });
 
         if(globalExpenses.length === 0) {
-            tbody = `<tr><td colspan="8" style="text-align:center; padding:30px; color:#999;">No transactions found.</td></tr>`;
+            let colSpan = fAcc === 'TUNAI' ? 7 : 8;
+            tbody = `<tr><td colspan="${colSpan}" style="text-align:center; padding:30px; color:#999;">No transactions found.</td></tr>`;
         }
 
         document.getElementById('cashbook-body').innerHTML = tbody;
@@ -1186,9 +1263,10 @@
             finalBalCR = Math.abs(finalBalVal).toFixed(2) + (finalBalVal >= 0 ? " CR" : " DR");
         }
 
+        let footerColspan = fAcc === 'TUNAI' ? 3 : 4;
         let tfootHtml = `
             <tr>
-                <td colspan="4"></td>
+                <td colspan="${footerColspan}"></td>
                 <td style="text-align:right; font-weight:bold; border-top:1px solid #000; border-bottom:3px double #000; padding:6px 2px;">${pageTotalOut > 0 ? pageTotalOut.toFixed(2) : ''}</td>
                 <td style="text-align:right; font-weight:bold; border-top:1px solid #000; border-bottom:3px double #000; padding:6px 2px;">${pageTotalIn > 0 ? pageTotalIn.toFixed(2) : ''}</td>
                 <td style="text-align:right; font-weight:bold; border-top:1px solid #000; border-bottom:3px double #000; padding:6px 2px;">${finalBalCR}</td>
@@ -1344,7 +1422,46 @@
         if(filteredDocs.length === 0) tbody = `<tr><td colspan="6" style="text-align:center; padding:30px; color:#999;">No documents found.</td></tr>`;
         
         document.getElementById('doc-list-body').innerHTML = tbody;
-    }
+    };
+
+    // KOD BARU: Fungsi untuk tukar bank (Dropdown Style)
+    window.changeTxnBank = function(txnId, currentBank, element) {
+        let def = JSON.parse(localStorage.getItem('sys_companyDefaults')) || {};
+        let banks = def.bankAccounts || [];
+
+        // Susun pilihan bank dari Settings bos
+        let options = `<option value="BANK" ${currentBank === 'BANK' ? 'selected' : ''}>BANK (Default)</option>`;
+        banks.forEach(b => {
+            let val = `${b.name} - ${b.ac}`;
+            options += `<option value="${val}" ${currentBank === val ? 'selected' : ''}>${val}</option>`;
+        });
+        options += `<option value="TUNAI" ${currentBank === 'TUNAI' ? 'selected' : ''}>TUNAI</option>`;
+
+        // Cipta kotak dropdown HTML
+        let selectHtml = `<select style="font-size:10px; padding:2px; border-radius:3px; border:1px solid #3498db; outline:none; cursor:pointer;" onchange="saveTxnBank('${txnId}', this.value)" onblur="window.loadAndProcessCashbook()">
+            ${options}
+        </select>`;
+        
+        // Tukarkan label tu jadi dropdown dan suruh browser fokus kat situ
+        let parent = element.parentNode;
+        element.outerHTML = selectHtml;
+        parent.querySelector('select').focus();
+    };
+
+    // Fungsi automatik save bila user pilih bank dari dropdown
+    window.saveTxnBank = function(txnId, newBank) {
+        let expenses = JSON.parse(localStorage.getItem('sys_expenses') || "[]");
+        let idx = expenses.findIndex(x => x.id === txnId || x.timestamp.toString() === txnId);
+
+        if (idx > -1) {
+            expenses[idx].accType = newBank;
+            localStorage.setItem('sys_expenses', JSON.stringify(expenses));
+            
+            // Refresh jadual & push ke Firebase
+            window.loadAndProcessCashbook();
+            if(window.forceSyncToFirebase) window.forceSyncToFirebase();
+        }
+    };
 
 </script>
 </body>

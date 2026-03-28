@@ -16,6 +16,7 @@
 
         body { font-family: 'Montserrat', sans-serif; margin: 0; padding: 0; background: var(--bg-body); color: var(--text-main); }
         
+        
         /* NAVBAR */
         .navbar { background: var(--nav-bg); padding: 0 20px; display: flex; align-items: center; overflow-x: auto; white-space: nowrap; box-shadow: 0 4px 10px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 1000;}
         .nav-brand { color: white; font-weight: 800; font-size: 18px; margin-right: 30px; padding: 15px 0; letter-spacing: 1px;}
@@ -107,8 +108,9 @@
             input.po-svc-desc, 
             input.po-mat-desc,
             #doc-attn,
-            #pv-supp-bankac,
-            #pv-supp-bankname,
+            #pv-supp-bank,
+            #pv-supp-acname,
+            #pv-supp-acno,
             #po-supp-name,
             #po-ship-name,
             #cndn-bank-name,
@@ -481,7 +483,12 @@
                     <tr><td style="padding:4px 10px 4px 0; font-weight:bold; color:#555; white-space:nowrap;">Date :</td><td style="padding:4px 0;"><input type="date" id="doc-date" class="doc-input" style="width:125px; font-weight:bold; text-align:right;"></td></tr>
                     <tr><td style="padding:4px 10px 4px 0; font-weight:bold; color:#555; white-space:nowrap;" id="doc-ref-label">PO No :</td><td style="padding:4px 0;"><input type="text" id="doc-no" class="doc-input" style="width:125px; font-weight:bold; text-align:right;"></td></tr>
                     
-                    <tr id="row-top-extra" class="non-pv"><td style="padding:4px 10px 4px 0; font-weight:bold; color:#555; white-space:nowrap;" id="doc-extra-label">Terms :</td><td style="padding:4px 0;"><input type="text" id="doc-extra-input" class="doc-input" style="width:125px; font-weight:bold; text-align:right;" placeholder="-"></td></tr>
+                    <tr id="row-top-extra"><td style="padding:4px 10px 4px 0; font-weight:bold; color:#555; white-space:nowrap;" id="doc-extra-label">Terms :</td>
+                        <td style="padding:4px 0;">
+                            <input type="text" id="doc-extra-input" class="doc-input non-pv" style="width:125px; font-weight:bold; text-align:right;" placeholder="-">
+                            <select id="pv-pay-from" class="doc-input pv-only" style="width:145px; font-weight:bold; text-align:right; display:none; outline:none; cursor:pointer;"></select>
+                        </td>
+                    </tr>
                     <tr id="row-top-amount" class="non-pv"><td style="padding:4px 10px 4px 0; font-weight:bold; color:#555; white-space:nowrap;">Amount :</td><td style="padding:4px 0; font-weight:bold; color:#000; white-space:nowrap;">MYR <span id="doc-top-amount">0.00</span></td></tr>
                     
                     <tr class="pv-only" style="display:none;"><td style="padding:4px 10px 4px 0; font-weight:bold; color:#555; white-space:nowrap;">Page :</td><td style="padding:4px 0; font-weight:bold;">1</td></tr>
@@ -491,24 +498,31 @@
 
         <div id="doc-middle-section" style="display:flex; justify-content:space-between; margin-bottom: 25px; font-size:11px;">
             
-            <div id="pv-supplier-bank-info" class="pv-only" style="display:none; margin-bottom: 10px; font-size:11px; width: 50%;">
+            <div id="pv-supplier-bank-info" class="bank-details-block" style="display:none; margin-bottom: 10px; font-size:11px; width: 50%;">
                 <div id="pv-bank-selector-container" class="no-print" style="display:none; margin-bottom:10px; background:#e0f7fa; padding:10px; border-radius:4px; border:1px dashed #00bcd4;">
                     <label style="font-weight:bold; color:#00796b; display:block; margin-bottom:5px;">Select Vendor Bank:</label>
                     <select id="pv-bank-selector" class="doc-input" style="width:100%; font-weight:bold; background:white; border:1px solid #ccc; padding:4px; border-radius:4px;" onchange="changeVendorBank(this)"></select>
                 </div>
                 <table style="border-collapse:collapse; width:100%;">
                     <tr>
-                        <td style="width:90px; font-weight:bold; padding-bottom:3px;">Account No.</td><td style="width:10px;">:</td>
+                        <td style="width:100px; font-weight:bold; padding-bottom:3px;">Bank Name</td><td style="width:10px;">:</td>
                         <td>
-                            <input type="text" id="pv-supp-bankac" class="doc-input" style="width:100%; font-weight:bold;" placeholder="-" oninput="this.nextElementSibling.innerText=this.value">
-                            <div class="print-mirror" style="font-weight:bold;"></div>
+                            <input type="text" id="pv-supp-bank" class="doc-input" style="width:100%; font-weight:bold; text-transform:uppercase;" placeholder="Eg: MAYBANK" oninput="this.nextElementSibling.innerText=this.value">
+                            <div class="print-mirror" style="font-weight:bold; text-transform:uppercase;"></div>
                         </td>
                     </tr>
                     <tr>
-                        <td style="font-weight:bold;">Account Name</td><td>:</td>
+                        <td style="font-weight:bold; padding-bottom:3px;">Account Name</td><td>:</td>
                         <td>
-                            <input type="text" id="pv-supp-bankname" class="doc-input" style="width:100%; font-weight:bold; text-transform:uppercase;" placeholder="-" oninput="this.nextElementSibling.innerText=this.value">
+                            <input type="text" id="pv-supp-acname" class="doc-input" style="width:100%; font-weight:bold; text-transform:uppercase;" placeholder="Eg: SYARIKAT ALI SDN BHD" oninput="this.nextElementSibling.innerText=this.value">
                             <div class="print-mirror" style="font-weight:bold; text-transform:uppercase;"></div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight:bold;">Account No.</td><td>:</td>
+                        <td>
+                            <input type="text" id="pv-supp-acno" class="doc-input" style="width:100%; font-weight:bold;" placeholder="Eg: 1122334455" oninput="this.nextElementSibling.innerText=this.value">
+                            <div class="print-mirror" style="font-weight:bold;"></div>
                         </td>
                     </tr>
                 </table>
@@ -943,7 +957,9 @@
                     bankName: data.bank_name || "",
                     bankAc: data.bank_ac || "",
                     logo: data.logo || "",
-                    logoHeight: data.logoHeight || 120
+                    logoHeight: data.logoHeight || 120,
+                    bankHolder: data.bank_holder || "", // <-- TAMBAH INI: Untuk tarik nama pemilik default
+                    bankAccounts: data.bankAccounts || [] // <-- TAMBAH INI: Untuk tarik senarai bank dari cloud
                 };
                 localStorage.setItem('sys_companyDefaults', JSON.stringify(def));
                 
@@ -1007,17 +1023,14 @@
         if(window.currentVendorBanks && window.currentVendorBanks[sel.value]) {
             let b = window.currentVendorBanks[sel.value];
             
-            // Masukkan Nombor Akaun
-            document.getElementById('pv-supp-bankac').value = b.bankAc;
-            document.getElementById('pv-supp-bankac').nextElementSibling.innerText = b.bankAc;
+            document.getElementById('pv-supp-bank').value = b.bankName || "";
+            document.getElementById('pv-supp-bank').nextElementSibling.innerText = b.bankName || "";
             
-            // Gabungkan Nama Bank + Nama Pemegang Akaun
-            // Contoh output: "MAYBANK - SYARIKAT ALI SDN BHD"
-            let combinedName = b.bankName;
-            if (b.accName) combinedName += " - " + b.accName;
+            document.getElementById('pv-supp-acname').value = b.accName || "";
+            document.getElementById('pv-supp-acname').nextElementSibling.innerText = b.accName || "";
             
-            document.getElementById('pv-supp-bankname').value = combinedName;
-            document.getElementById('pv-supp-bankname').nextElementSibling.innerText = combinedName;
+            document.getElementById('pv-supp-acno').value = b.bankAc || "";
+            document.getElementById('pv-supp-acno').nextElementSibling.innerText = b.bankAc || "";
         }
     };
 
@@ -1037,6 +1050,8 @@
 
         toggleRightPanel('CLIENTS'); // Paksa senarai Supplier buka automatik
         loadItemDatalist(); 
+
+        if(window.loadCompanyBankAccounts) window.loadCompanyBankAccounts();
 
         const urlParams = new URLSearchParams(window.location.search);
         const viewDoc = urlParams.get('view');
@@ -1895,6 +1910,18 @@
         if(poSigns) poSigns.style.display = 'none'; 
         let cndnSigns = document.getElementById('cndn-signatures');
         if(cndnSigns) cndnSigns.style.display = 'none';
+        // KOD BARU: Tunjuk kotak bank vendor untuk PV dan BILL sahaja
+        let suppBankInfo = document.getElementById('pv-supplier-bank-info');
+        if (suppBankInfo) {
+            suppBankInfo.style.display = (mode === 'PV' || mode === 'BILL') ? 'block' : 'none';
+            // Tambah dua baris ni untuk bagi dia ruang 100% bila buka BILL
+            suppBankInfo.style.width = (mode === 'BILL') ? '100%' : '48%';
+            suppBankInfo.style.marginBottom = (mode === 'BILL') ? '25px' : '10px';
+        }
+        
+        // Ajar kotak utama supaya jangan berhimpit
+        let midSec = document.getElementById('doc-middle-section');
+        if(midSec) midSec.style.flexWrap = 'wrap';
 
         // KOD YANG AWAK TANYA TU LETAK DI SINI:
         let cndnBankInfo = document.getElementById('cndn-bank-info'); 
@@ -2054,12 +2081,15 @@
                 document.getElementById('doc-billto-label').innerText = "Pay To:";
                 let projL = document.getElementById('doc-proj-label'); if(projL) projL.innerText = "Payment Details:";
 
+                // --- MUNCULKAN BALIK KOTAK PAY FROM UNTUK DIRECT PV ---
+                let extraRow = document.getElementById('row-top-extra');
+                if(extraRow) extraRow.style.display = 'table-row';
+                let extraLabel = document.getElementById('doc-extra-label');
+                if(extraLabel) extraLabel.innerText = "Pay From :";
+                
                 if(discRow) discRow.style.display = 'none';
-
-                // KOD PEMBAIKAN: Sorok Qty/UOM dan Tunjukkan A/C No/Name
                 document.querySelectorAll('.col-standard').forEach(el => el.style.display = 'none'); 
                 document.querySelectorAll('.bill-ac').forEach(el => el.style.display = 'table-cell');
-
                 if(thRate) thRate.innerText = 'Amount (MYR)';
                 if(autoSign) autoSign.style.display = 'none'; 
             }
@@ -2146,15 +2176,29 @@
             if(mode === 'PO') { document.getElementById('doc-extra-input').value = formatDate(new Date(Date.now() + 14*86400000)); setAndMirror('doc-terms', "1. Please send two copies of your bills.\n2. Enter this order in accordance with the prices, terms, delivery method, and specifications listed above."); addDocRow(); }
             else if(mode === 'BILL') { document.getElementById('doc-extra-input').value = clientTerms; setAndMirror('doc-terms', ""); addDocRow(); }
             else if(mode === 'PV') { 
-                document.getElementById('doc-extra-input').value = "TRANSFER"; setAndMirror('doc-terms', "Payment approved and processed."); 
-                addDocRow("", "", 1, 0, "Sum"); 
-                if(currentClient) {
-                    document.getElementById('pv-supp-bankac').value = currentClient.bankAc || "";
-                    document.getElementById('pv-supp-bankac').nextElementSibling.innerText = currentClient.bankAc || "";
-                    document.getElementById('pv-supp-bankname').value = currentClient.bankName || "";
-                    document.getElementById('pv-supp-bankname').nextElementSibling.innerText = currentClient.bankName || "";
+                    setAndMirror('doc-terms', "Payment approved and processed."); 
+                    addDocRow("", "", 1, 0, "Sum"); 
+                    
+                    // KOD BARU: Auto-Tarik Bank Vendor bila PV baru dibuka
+                    if(currentClient) {
+                        let bName = currentClient.bankName || "";
+                        let bAc = currentClient.bankAc || "";
+                        let aName = currentClient.accName || "";
+
+                        if(currentClient.bankAccounts && currentClient.bankAccounts.length > 0) {
+                            bName = currentClient.bankAccounts[0].bankName || bName;
+                            bAc = currentClient.bankAccounts[0].bankAc || bAc;
+                            aName = currentClient.bankAccounts[0].accName || aName;
+                        }
+
+                        document.getElementById('pv-supp-bank').value = bName;
+                        document.getElementById('pv-supp-bank').nextElementSibling.innerText = bName;
+                        document.getElementById('pv-supp-acname').value = aName;
+                        document.getElementById('pv-supp-acname').nextElementSibling.innerText = aName;
+                        document.getElementById('pv-supp-acno').value = bAc;
+                        document.getElementById('pv-supp-acno').nextElementSibling.innerText = bAc;
+                    }
                 }
-            }
             else if (mode === 'CNDN') { 
                 document.getElementById('doc-extra-input').value = ""; setAndMirror('doc-terms', ""); addDocRow(); 
                 if(window.setCndnBank) window.setCndnBank(true); // Default tarik "Our Bank" bila mula
@@ -2178,24 +2222,42 @@
 
             if(document.getElementById('doc-discount')) document.getElementById('doc-discount').value = loadData.discount || loadData.disc || "0.00";
             
-            if(mode === 'PV') { 
-                document.getElementById('doc-extra-input').value = loadData.payMethod || ""; 
+           if(mode === 'PV') { 
+                let payFromSelect = document.getElementById('pv-pay-from');
+                if(payFromSelect) {
+                    payFromSelect.value = loadData.payMethod || "";
+                    if(payFromSelect.selectedIndex === -1) payFromSelect.selectedIndex = 0;
+                }
+
                 setAndMirror('doc-project', `Ref Bill: ${loadData.refInv || '-'}\nCheque/Ref: ${loadData.payRef || '-'}`); 
                 setAndMirror('doc-terms', "Payment approved and processed."); 
 
                 let pulledBankAc = loadData.bankAc || "";
                 let pulledBankName = loadData.bankName || "";
+                let pulledAccName = loadData.accName || ""; 
                 
                 if (!pulledBankAc || !pulledBankName) {
                     let clients = JSON.parse(localStorage.getItem('sys_db_suppliers') || "[]");
                     let c = clients.find(x => x.name === (loadData.custName || loadData.cName));
-                    if(c) { pulledBankAc = c.bankAc || ""; pulledBankName = c.bankName || ""; }
+                    if(c) { 
+                        pulledBankAc = c.bankAc || ""; 
+                        pulledBankName = c.bankName || ""; 
+                        pulledAccName = c.accName || "";
+                        if(c.bankAccounts && c.bankAccounts.length > 0) {
+                            pulledBankName = c.bankAccounts[0].bankName || pulledBankName;
+                            pulledBankAc = c.bankAccounts[0].bankAc || pulledBankAc;
+                            pulledAccName = c.bankAccounts[0].accName || pulledAccName;
+                        }
+                    }
                 }
-                document.getElementById('pv-supp-bankac').value = pulledBankAc;
-                document.getElementById('pv-supp-bankac').nextElementSibling.innerText = pulledBankAc;
-                document.getElementById('pv-supp-bankname').value = pulledBankName;
-                document.getElementById('pv-supp-bankname').nextElementSibling.innerText = pulledBankName;
-            } 
+                
+                document.getElementById('pv-supp-bank').value = pulledBankName;
+                document.getElementById('pv-supp-bank').nextElementSibling.innerText = pulledBankName;
+                document.getElementById('pv-supp-acname').value = pulledAccName;
+                document.getElementById('pv-supp-acname').nextElementSibling.innerText = pulledAccName;
+                document.getElementById('pv-supp-acno').value = pulledBankAc;
+                document.getElementById('pv-supp-acno').nextElementSibling.innerText = pulledBankAc;
+            }
             else { 
                 if (mode === 'CNDN') {
                     document.getElementById('doc-extra-input').value = loadData.terms || ""; 
@@ -2220,33 +2282,17 @@
         }
        // --- KOD BARU: TARIK BANK INFO UNTUK BILL ---
         let billBankInfo = document.getElementById('bill-bank-info');
-        if (billBankInfo) {
-            if (mode === 'BILL') {
-                // Pintar mencari nama: Sama ada dari Data Lama (View) atau Klien Semasa (Convert)
-                let suppName = (loadData ? (loadData.custName || loadData.cName || loadData.poSuppName) : null) || (currentClient ? currentClient.name : "") || document.getElementById('doc-custName').value;
-                
-                let suppliers = JSON.parse(localStorage.getItem('sys_db_suppliers') || "[]");
-                let supplier = suppliers.find(s => s.name === suppName);
-                
-                if (supplier && (supplier.bankName || supplier.bankAc)) {
-                    document.getElementById('bill-bank-name').innerText = supplier.bankName || "-";
-                    document.getElementById('bill-bank-ac').innerText = supplier.bankAc || "-";
-                    billBankInfo.style.display = 'block';
-                } else {
-                    billBankInfo.style.display = 'none';
-                }
-            } else {
-                billBankInfo.style.display = 'none';
-            }
-        }
+        if (billBankInfo) billBankInfo.style.display = 'none';
 
         // ==========================================================
         // TAMPAL KOD LANGKAH 4 DI SINI (SEBELUM CALCUNIFIEDDOC)
         // ==========================================================
-        if (mode === 'PV') {
+        // ENJIN BANK UNTUK PV DAN BILL
+        
+        if (mode === 'PV' || mode === 'BILL') {
             let bankAccounts = [];
             let suppliers = JSON.parse(localStorage.getItem('sys_db_suppliers') || "[]");
-            let suppName = document.getElementById('doc-custName').value; // Tarik nama vendor dari kotak borang
+            let suppName = document.getElementById('doc-custName').value; 
             let c = suppliers.find(x => x.name === suppName);
             
             if (c && c.bankAccounts) bankAccounts = c.bankAccounts;
@@ -2255,9 +2301,8 @@
             let bankSel = document.getElementById('pv-bank-selector');
             
             if (bankSel && bankSelCont) {
-                if (bankAccounts.length > 1) { // Muncul kalau ada lebih 1 bank
+                if (bankAccounts.length > 1) { 
                     window.currentVendorBanks = bankAccounts;
-                   // Gantikan baris bankSel.innerHTML tu kepada ini:
                     bankSel.innerHTML = bankAccounts.map((b, i) => {
                         let display = `${b.bankName} - ${b.bankAc}`;
                         if (b.accName) display += ` (${b.accName})`;
@@ -2265,7 +2310,6 @@
                     }).join('');
                     bankSelCont.style.display = 'block';
                     
-                    // Jika edit PV lama, pastikan dropdown tunjuk bank yang betul
                     if (loadData && loadData.bankAc) {
                         let matchIdx = bankAccounts.findIndex(b => b.bankAc === loadData.bankAc);
                         if (matchIdx > -1) bankSel.value = matchIdx;
@@ -2274,6 +2318,32 @@
                     bankSelCont.style.display = 'none';
                 }
             }
+
+            // Auto-Fill 3 Baris Bank
+            let pulledBankAc = loadData ? (loadData.bankAc || "") : "";
+            let pulledBankName = loadData ? (loadData.bankName || "") : "";
+            let pulledAccName = loadData ? (loadData.accName || "") : ""; 
+            
+            if (!pulledBankAc && !pulledBankName) {
+                if(c && c.bankAccounts && c.bankAccounts.length > 0) {
+                    pulledBankName = c.bankAccounts[0].bankName || "";
+                    pulledBankAc = c.bankAccounts[0].bankAc || "";
+                    pulledAccName = c.bankAccounts[0].accName || "";
+                } else if (c) {
+                    pulledBankName = c.bankName || "";
+                    pulledBankAc = c.bankAc || "";
+                    pulledAccName = c.accName || "";
+                }
+            }
+            
+            document.getElementById('pv-supp-bank').value = pulledBankName;
+            if(document.getElementById('pv-supp-bank').nextElementSibling) document.getElementById('pv-supp-bank').nextElementSibling.innerText = pulledBankName;
+            
+            document.getElementById('pv-supp-acname').value = pulledAccName;
+            if(document.getElementById('pv-supp-acname').nextElementSibling) document.getElementById('pv-supp-acname').nextElementSibling.innerText = pulledAccName;
+
+            document.getElementById('pv-supp-acno').value = pulledBankAc;
+            if(document.getElementById('pv-supp-acno').nextElementSibling) document.getElementById('pv-supp-acno').nextElementSibling.innerText = pulledBankAc;
         }
         // ==========================================================
 
@@ -2409,52 +2479,67 @@
 
             hKey = 'sys_poHistory'; dbKey = 'sys_lastPoID'; 
         }
-        else if (activeDocMode === 'BILL') { baseData.poNo = document.getElementById('doc-extra-input').value; baseData.discount = document.getElementById('doc-discount').value; baseData.total = document.getElementById('doc-subtotal').innerText.replace(/,/g,''); let existInv = JSON.parse(localStorage.getItem('sys_billHistory')||"[]").find(x=>x.id===id); baseData.payments = existInv ? existInv.payments : []; hKey = 'sys_billHistory'; dbKey = 'sys_lastBillID'; } 
+        else if (activeDocMode === 'BILL') { 
+            baseData.poNo = document.getElementById('doc-extra-input').value; 
+            baseData.discount = document.getElementById('doc-discount').value; 
+            baseData.total = document.getElementById('doc-subtotal').innerText.replace(/,/g,''); 
+            
+            // SAVE 3 DATA BANK VENDOR UNTUK BILL
+            baseData.bankName = document.getElementById('pv-supp-bank').value;
+            baseData.accName = document.getElementById('pv-supp-acname').value;
+            baseData.bankAc = document.getElementById('pv-supp-acno').value;
+
+            let existInv = JSON.parse(localStorage.getItem('sys_billHistory')||"[]").find(x=>x.id===id); 
+            baseData.payments = existInv ? existInv.payments : []; 
+            hKey = 'sys_billHistory'; dbKey = 'sys_lastBillID'; 
+        }
         else if (activeDocMode === 'PV') { 
-            baseData.payMethod = document.getElementById('doc-extra-input').value; 
+            // KOD BARU: Ambil nilai dari Dropdown Pay From
+            baseData.payMethod = document.getElementById('pv-pay-from').value; 
+            
             baseData.total = document.getElementById('doc-subtotal').innerText.replace(/,/g,''); 
             baseData.cName = document.getElementById('doc-custName').value; 
             let existPv = JSON.parse(localStorage.getItem('sys_pvHistory')||"[]").find(x=>x.id===id); 
             
-            // Tangkap maklumat jika ia Direct PV
             baseData.refInv = existPv ? existPv.refInv : "DIRECT"; 
             baseData.payRef = existPv ? existPv.payRef : document.getElementById('doc-project').value; 
-            baseData.bankAc = document.getElementById('pv-supp-bankac').value;
-            baseData.bankName = document.getElementById('pv-supp-bankname').value;
+            
+            // SAVE 3 DATA BANK VENDOR 
+            baseData.bankName = document.getElementById('pv-supp-bank').value;
+            baseData.accName = document.getElementById('pv-supp-acname').value;
+            baseData.bankAc = document.getElementById('pv-supp-acno').value;
+            
             hKey = 'sys_pvHistory'; dbKey = 'sys_lastPvID'; 
 
-           // --- KOD BARU: TOLAK DUIT & UPDATE CASHBOOK SECARA AUTOMATIK ---
-        let expenses = JSON.parse(localStorage.getItem('sys_expenses') || "[]");
-        let payDetails = document.getElementById('doc-project').value || 'NO REF';
-        
-        // SISTEM PINTAR: Tangkap kod akaun dari baris pertama jadual
-        let chosenCategory = (items.length > 0 && items[0].acNo) ? (items[0].acNo + " - " + items[0].acName) : "DIRECT PAY (A/P)";
+            // KOD CASHBOOK
+            let expenses = JSON.parse(localStorage.getItem('sys_expenses') || "[]");
+            let payDetails = document.getElementById('doc-project').value || 'NO REF';
+            let chosenCategory = (items.length > 0 && items[0].acNo) ? (items[0].acNo + " - " + items[0].acName) : "DIRECT PAY (A/P)";
 
-        if (!existPv) { 
-            // Jika PV Baru
-            expenses.push({
-                date: baseData.date, 
-                category: chosenCategory, // <--- Masukkan kod akaun yang dipilih
-                supInv: id, 
-                desc: `DIRECT PAY TO: ${baseData.cName} - ${payDetails}`,
-                amount: parseFloat(baseData.total),
-                accType: "BANK", 
-                timestamp: baseData.timestamp, 
-                flow: 'OUT'
-            });
-        } else {
-            // Jika PV di-edit, KEMASKINI terus di Cashbook!
-            let expIdx = expenses.findIndex(x => x.supInv === id);
-            if (expIdx > -1) {
-                expenses[expIdx].date = baseData.date;
-                expenses[expIdx].category = chosenCategory; // <--- Kemaskini kategori juga
-                expenses[expIdx].desc = `DIRECT PAY TO: ${baseData.cName} - ${payDetails}`;
-                expenses[expIdx].amount = parseFloat(baseData.total);
+            if (!existPv) { 
+                expenses.push({
+                    date: baseData.date, 
+                    category: chosenCategory, 
+                    supInv: id, 
+                    desc: `DIRECT PAY TO: ${baseData.cName} - ${payDetails}`,
+                    amount: parseFloat(baseData.total),
+                    accType: baseData.payMethod, // Ambil dari dropdown
+                    timestamp: baseData.timestamp, 
+                    flow: 'OUT'
+                });
+            } else {
+                let expIdx = expenses.findIndex(x => x.supInv === id);
+                if (expIdx > -1) {
+                    expenses[expIdx].date = baseData.date;
+                    expenses[expIdx].category = chosenCategory; 
+                    expenses[expIdx].desc = `DIRECT PAY TO: ${baseData.cName} - ${payDetails}`;
+                    expenses[expIdx].amount = parseFloat(baseData.total);
+                    expenses[expIdx].accType = baseData.payMethod; 
+                }
             }
+            localStorage.setItem('sys_expenses', JSON.stringify(expenses));
         }
-        localStorage.setItem('sys_expenses', JSON.stringify(expenses));
-        // ---------------------------------------------------------------
-        }
+
         else if (activeDocMode === 'CNDN') { 
             let rawProj = document.getElementById('doc-project').value;
             let extractedRef = "";
@@ -2595,10 +2680,9 @@
         calcUnifiedDoc(); 
         document.querySelectorAll('textarea').forEach(el => autoResize(el)); 
         
-        // KOD DIBETULKAN: Hanya sasar label dan kotak nota sahaja, BUKAN kotak parent!
         let notesText = document.getElementById('doc-terms').value.trim();
         let docTerms = document.getElementById('doc-terms');
-        let notesLabel = docTerms ? docTerms.previousElementSibling : null; // Ambil label di atas kotak nota
+        let notesLabel = docTerms ? docTerms.previousElementSibling : null; 
         let notesMirror = document.getElementById('doc-terms-mirror');
         
         if(notesText === "") {
@@ -2608,6 +2692,13 @@
             if(notesLabel) notesLabel.style.display = "block";
             if(notesMirror) notesMirror.style.display = "block"; 
         }
+
+        // --- KOD BARU: Sorok "Pay From" masa Print PV ---
+        let extraRow = document.getElementById('row-top-extra');
+        if (activeDocMode === 'PV' && extraRow) {
+            extraRow.style.display = 'none';
+        }
+        // ----------------------------------------------
         
         document.body.className = ''; 
         document.body.classList.add('printing-invoice'); 
@@ -2621,8 +2712,15 @@
         let cleanupPrint = function() {
             document.title = oriTitle; 
             document.body.className = ''; 
-            // Munculkan kembali label selepas selesai print
+            
             if(notesLabel) notesLabel.style.display = "block";
+
+            // --- KOD BARU: Munculkan balik "Pay From" lepas Print ---
+            if (activeDocMode === 'PV' && extraRow) {
+                extraRow.style.display = 'table-row';
+            }
+            // ------------------------------------------------------
+
             window.removeEventListener('focus', cleanupPrint);
             window.removeEventListener('touchstart', cleanupPrint);
             window.removeEventListener('click', cleanupPrint);
@@ -2693,6 +2791,47 @@
         document.getElementById('po-tot-materials').innerText = totMat.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
 
         document.getElementById('po-grand-total').innerText = (totSvc + totMat).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+    };
+
+    // KOD BARU: Tarik senarai bank ke dalam Modal Bayaran
+    window.loadBankAccounts = function() {
+        let def = JSON.parse(localStorage.getItem('sys_companyDefaults')) || {};
+        let banks = def.bankAccounts || [];
+        
+        let html = '';
+        if(banks.length > 0) {
+            banks.forEach(b => {
+                html += `<option value="${b.name} - ${b.ac}">🏦 ${b.name} (${b.ac})</option>`;
+            });
+        } else {
+            html += `<option value="BANK">🏦 Default Bank Account</option>`;
+        }
+        html += `<option value="TUNAI">💵 Petty Cash / Tunai</option>`;
+
+        let bpAcc = document.getElementById('bp-acc');
+        if(bpAcc) bpAcc.innerHTML = html;
+    };
+    // KOD BARU: Tarik senarai bank syarikat ke Modal & PV Dropdown
+    window.loadCompanyBankAccounts = function() {
+        let def = JSON.parse(localStorage.getItem('sys_companyDefaults')) || {};
+        let banks = def.bankAccounts || [];
+        
+        let html = '';
+        if(banks.length > 0) {
+            banks.forEach(b => {
+                html += `<option value="${b.name} - ${b.ac}">🏦 ${b.name} (${b.ac})</option>`;
+            });
+        } else {
+            html += `<option value="BANK">🏦 Bank Account (Default)</option>`;
+        }
+        html += `<option value="TUNAI">💵 Cash in Hand (Tunai)</option>`;
+
+        let bpAcc = document.getElementById('bp-acc');
+        if(bpAcc) bpAcc.innerHTML = html;
+
+        // SUMBAT MASUK KE DALAM DROPDOWN 'PAY FROM' DI PV
+        let pvPayFrom = document.getElementById('pv-pay-from');
+        if(pvPayFrom) pvPayFrom.innerHTML = html;
     };
 </script>
 </body>
